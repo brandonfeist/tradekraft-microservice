@@ -1,8 +1,10 @@
 package com.tradekraftcollective.microservice.persistence.entity;
 
 import lombok.Data;
+import org.eclipse.persistence.jpa.jpql.parser.DateTime;
 
 import javax.persistence.*;
+import java.util.Date;
 
 /**
  * Created by brandonfeist on 9/4/17.
@@ -45,4 +47,21 @@ public class Artist {
 
     @Column(name = "slug")
     private String slug;
+
+    @Column(name = "created_at")
+    private Date createdAt;
+
+    @Column(name = "updated_at")
+    private Date updatedAt;
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = new Date();
+        updatedAt = new Date();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = new Date();
+    }
 }
