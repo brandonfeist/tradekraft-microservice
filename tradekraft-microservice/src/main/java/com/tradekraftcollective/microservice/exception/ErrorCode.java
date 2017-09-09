@@ -8,7 +8,11 @@ import org.springframework.http.HttpStatus;
 public enum ErrorCode {
 
     INVALID_ARTIST_SLUG(HttpStatus.BAD_REQUEST.value(), "Invalid artist slug"),
-    INVALID_ARTIST_NAME(HttpStatus.BAD_REQUEST.value(), "Invalid artist name");
+    INVALID_ARTIST_NAME(HttpStatus.BAD_REQUEST.value(), "Invalid artist name"),
+    INVALID_ARTIST_URL(HttpStatus.BAD_REQUEST.value(), "Invalid artist url"),
+
+    INVALID_IMAGE_DEMINSIONS(HttpStatus.BAD_REQUEST.value(), "Invalid image dimensions"),
+    INVALID_IMAGE_EXTENSION(HttpStatus.BAD_REQUEST.value(), "Invalid image extension");
 
     private final int errorCode;
 

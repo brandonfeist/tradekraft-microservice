@@ -13,6 +13,20 @@ import java.util.Date;
 @Data
 @Table(name = "artists")
 public class Artist {
+
+    public Artist() {}
+
+    public Artist(String name, String description, String soundcloud, String facebook, String twitter,
+                  String instagram, String spotify) {
+        this.name = name;
+        this.description = description;
+        this.soundcloud = soundcloud;
+        this.facebook = facebook;
+        this.twitter = twitter;
+        this.instagram = instagram;
+        this.spotify = spotify;
+    }
+
     @Id
     @Column(name = "id", nullable = false)
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -41,9 +55,6 @@ public class Artist {
 
     @Column(name = "spotify")
     private String spotify;
-
-    @Column(name = "status")
-    private String status;
 
     @Column(name = "slug")
     private String slug;

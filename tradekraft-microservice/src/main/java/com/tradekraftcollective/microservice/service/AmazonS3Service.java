@@ -15,6 +15,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 import org.apache.commons.io.IOUtils;
 
+import javax.imageio.ImageIO;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -53,9 +54,9 @@ public class AmazonS3Service {
         return putObjectResult;
     }
 
+    // Maybe change to List<MultipartFile> instead of array MultipartFile[]
     public List<PutObjectResult> upload(MultipartFile[] multipartFiles, String filePath) {
         List<PutObjectResult> putObjectResults = new ArrayList<>();
-        //Randomize file name to random uuid string to avoid duplicates
 
         Arrays.stream(multipartFiles)
                 .filter(multipartFile -> !StringUtils.isEmpty(multipartFile.getOriginalFilename()))
@@ -74,12 +75,11 @@ public class AmazonS3Service {
         return putObjectResults;
     }
 
-    public PutObjectResult upload(MultipartFile multipartFile, String filePath) {
+    public PutObjectResult upload(MultipartFile multipartFile, String filePath, String fileName) {
         logger.info("Uploading file {}", multipartFile.getOriginalFilename());
-        //Randomize file name to random uuid string to avoid duplicates
 
         PutObjectResult putObjectResult = null;
-        String uploadKey = (filePath + multipartFile.getOriginalFilename());
+        String uploadKey = (filePath + fileName);
 
         try {
             putObjectResult = upload(multipartFile.getInputStream(), uploadKey);
@@ -89,6 +89,11 @@ public class AmazonS3Service {
 
         logger.info("Successfully uploaded file https://s3.amazonaws.com/{}/{}", bucket, uploadKey);
         return putObjectResult;
+    }
+
+    public void delete(String deleteKey) {
+        DeleteObjectRequest deleteObjectRequest = new DeleteObjectRequest(bucket, deleteKey);
+        amazonS3Client.deleteObject(deleteObjectRequest);
     }
 
     public ResponseEntity<byte[]> download(String key) throws IOException {

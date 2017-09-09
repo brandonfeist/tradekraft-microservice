@@ -1,5 +1,6 @@
 package com.tradekraftcollective.microservice.controller;
 
+import com.amazonaws.services.ec2.model.Image;
 import com.tradekraftcollective.microservice.persistence.entity.Artist;
 import com.tradekraftcollective.microservice.repository.IArtistRepository;
 import com.tradekraftcollective.microservice.service.IArtistManagementService;
@@ -64,16 +65,20 @@ public class MainManagementController {
     @RequestMapping(value = "/artists", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> createArtist(
             @RequestParam("name") String name,
-            @RequestParam("status") String status,
+            @RequestParam(value = "description", required = false) String description,
             @RequestParam("image") MultipartFile imageFile,
+            @RequestParam(value = "soundcloud", required = false) String soundcloud,
+            @RequestParam(value = "facebook", required = false) String facebook,
+            @RequestParam(value = "twitter", required = false) String twitter,
+            @RequestParam(value = "instagram", required = false) String instagram,
+            @RequestParam(value = "spotify", required = false) String spotify,
             @RequestHeader(value = "X-Request-ID", required = false) String xRequestId
     ) {
-        Artist inputArtist = new Artist();
-        inputArtist.setName(name);
-        inputArtist.setStatus(status);
-        inputArtist.setImage("test");
+        Artist inputArtist = new Artist(name, description, soundcloud, facebook, twitter, instagram, spotify);
+
         logger.info("createArtist [{}] {}", xRequestId, inputArtist);
 
+        imageFile.getContentType();
         StopWatch stopWatch = new StopWatch("createArtist");
 
         Artist artist = artistManagementService.createArtist(inputArtist, imageFile, stopWatch);
