@@ -1,7 +1,6 @@
 package com.tradekraftcollective.microservice.utilities;
 
 import net.coobird.thumbnailator.Thumbnails;
-import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 

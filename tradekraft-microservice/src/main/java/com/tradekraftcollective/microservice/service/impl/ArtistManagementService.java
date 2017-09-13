@@ -32,26 +32,6 @@ public class ArtistManagementService implements IArtistManagementService {
     private static final String DESCENDING = "desc";
     private static final String ARTIST_IMAGE_PATH = "uploads/artist/image/";
 
-    private static enum FileSizes {
-        ORIGINAL("", 1024, 1024),
-        MEDIUM("medium", 512, 512),
-        THUMB("small", 150, 150);
-
-        private String sizeName;
-        private int width;
-        private int height;
-
-        FileSizes(String sizeName, int width, int height) {
-            this.sizeName = sizeName;
-            this.width = width;
-            this.height = height;
-        }
-
-        public String getSizeName() { return sizeName; }
-        public int getWidth() { return width; }
-        public int getHeight() { return height; }
-    }
-
     @Inject
     IArtistRepository artistRepository;
 
@@ -126,26 +106,26 @@ public class ArtistManagementService implements IArtistManagementService {
         String fileName = imageFile.getOriginalFilename();
 
         try {
-            for (FileSizes imageSize : FileSizes.values()) {
-                if (imageSize != FileSizes.ORIGINAL) {
-                    logger.info("Uploading {} image size ({}, {})", imageSize.getSizeName(), imageSize.getWidth(), imageSize.getHeight());
+            for (Artist.FileSizes imageSize : Artist.FileSizes.values()) {
+                if (imageSize != Artist.FileSizes.ORIGINAL) {
+                    logger.debug("Uploading {} image size ({}, {})", imageSize.getSizeName(), imageSize.getWidth(), imageSize.getHeight());
 
                     File tmpFile = new File((imageSize.getSizeName() + "_" + fileName));
 
                     tmpFile.createNewFile();
 
-                    amazonS3Service.upload(imageProcessingUtil.resizeToLimit(imageSize.width, imageSize.height, 1.0, imageFile, tmpFile),
+                    amazonS3Service.upload(imageProcessingUtil.resizeToLimit(imageSize.getWidth(), imageSize.getHeight(), 1.0, imageFile, tmpFile),
                             uploadPath, (imageSize.getSizeName() + "_" + fileName ));
 
                     tmpFile.delete();
                 } else {
-                    logger.info("Uploading original image size ({}, {})", imageSize.getWidth(), imageSize.getHeight());
+                    logger.debug("Uploading original image size ({}, {})", imageSize.getWidth(), imageSize.getHeight());
 
                     File tmpFile = new File(fileName);
 
                     tmpFile.createNewFile();
 
-                    amazonS3Service.upload(imageProcessingUtil.resizeToLimit(imageSize.width, imageSize.height, 1.0, imageFile, tmpFile),
+                    amazonS3Service.upload(imageProcessingUtil.resizeToLimit(imageSize.getWidth(), imageSize.getHeight(), 1.0, imageFile, tmpFile),
                             uploadPath, fileName);
 
                     tmpFile.delete();

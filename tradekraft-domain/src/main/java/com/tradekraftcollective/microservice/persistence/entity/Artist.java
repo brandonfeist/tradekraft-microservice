@@ -1,7 +1,11 @@
 package com.tradekraftcollective.microservice.persistence.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.google.gson.JsonObject;
+import lombok.AccessLevel;
 import lombok.Data;
-import org.eclipse.persistence.jpa.jpql.parser.DateTime;
+import lombok.Getter;
+import lombok.Setter;
 
 import javax.persistence.*;
 import java.util.Date;
@@ -13,6 +17,26 @@ import java.util.Date;
 @Data
 @Table(name = "artists")
 public class Artist {
+
+    public enum FileSizes {
+        ORIGINAL("original", 1024, 1024),
+        MEDIUM("medium", 512, 512),
+        THUMB("thumb", 150, 150);
+
+        private String sizeName;
+        private int width;
+        private int height;
+
+        FileSizes(String sizeName, int width, int height) {
+            this.sizeName = sizeName;
+            this.width = width;
+            this.height = height;
+        }
+
+        public String getSizeName() { return sizeName; }
+        public int getWidth() { return width; }
+        public int getHeight() { return height; }
+    }
 
     public Artist() {}
 
@@ -26,6 +50,12 @@ public class Artist {
         this.instagram = instagram;
         this.spotify = spotify;
     }
+
+    @Transient
+    @JsonIgnore
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
+    private final String AWS_URL = "https://s3.amazonaws.com/tradekraft-assets/uploads/artist/image/";
 
     @Id
     @Column(name = "id", nullable = false)
@@ -64,6 +94,22 @@ public class Artist {
 
     @Column(name = "updated_at")
     private Date updatedAt;
+
+    public String getImage() {
+        JsonObject jsonObject = new JsonObject();
+
+        for (FileSizes imageSize : FileSizes.values()) {
+            if (imageSize != Artist.FileSizes.ORIGINAL) {
+                jsonObject.addProperty(imageSize.getSizeName(),
+                        (AWS_URL + slug + "/" + imageSize.getSizeName() + "_" + image));
+            } else {
+                jsonObject.addProperty(imageSize.getSizeName(),
+                        (AWS_URL + slug + "/" + image));
+            }
+        }
+
+        return jsonObject.toString();
+    }
 
     @PrePersist
     protected void onCreate() {
