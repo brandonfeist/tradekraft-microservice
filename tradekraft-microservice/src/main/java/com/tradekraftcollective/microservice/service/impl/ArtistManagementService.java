@@ -7,6 +7,7 @@ import com.tradekraftcollective.microservice.persistence.entity.Artist;
 import com.tradekraftcollective.microservice.repository.IArtistRepository;
 import com.tradekraftcollective.microservice.service.AmazonS3Service;
 import com.tradekraftcollective.microservice.service.IArtistManagementService;
+import com.tradekraftcollective.microservice.utilities.ImageProcessingUtil;
 import com.tradekraftcollective.microservice.validator.ArtistValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,6 +19,8 @@ import org.springframework.util.StopWatch;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.inject.Inject;
+import java.io.File;
+import java.io.IOException;
 
 /**
  * Created by brandonfeist on 9/5/17.
@@ -26,35 +29,37 @@ import javax.inject.Inject;
 public class ArtistManagementService implements IArtistManagementService {
     private static final Logger logger = LoggerFactory.getLogger(ArtistManagementService.class);
 
-    private enum ARTIST_IMAGE_SIZES {
+    private static final String DESCENDING = "desc";
+    private static final String ARTIST_IMAGE_PATH = "uploads/artist/image/";
+
+    private static enum FileSizes {
         ORIGINAL("", 1024, 1024),
-        THUMB("thumb", 150, 150);
+        MEDIUM("medium", 512, 512),
+        THUMB("small", 150, 150);
 
-        private final String sizeName;
-        private final int width;
-        private final int height;
+        private String sizeName;
+        private int width;
+        private int height;
 
-        ARTIST_IMAGE_SIZES(String sizeName, int width, int height) {
+        FileSizes(String sizeName, int width, int height) {
             this.sizeName = sizeName;
             this.width = width;
             this.height = height;
         }
 
         public String getSizeName() { return sizeName; }
-
         public int getWidth() { return width; }
-
         public int getHeight() { return height; }
     }
-
-    private static final String DESCENDING = "desc";
-    private static final String ARTIST_IMAGE_PATH = "uploads/artist/image/";
 
     @Inject
     IArtistRepository artistRepository;
 
     @Inject
     ArtistValidator artistValidator;
+
+    @Inject
+    ImageProcessingUtil imageProcessingUtil;
 
     @Inject
     AmazonS3Service amazonS3Service;
@@ -99,10 +104,9 @@ public class ArtistManagementService implements IArtistManagementService {
         stopWatch.start("saveArtist");
 
         artist.setSlug(createArtistSlug(artist.getName()));
-
         artist.setImage(uploadArtistImage(artist, imageFile));
-
         Artist returnArtist = artistRepository.save(artist);
+
         stopWatch.stop();
         logger.info("***** SUCCESSFULLY CREATED ARTIST WITH SLUG = {}", returnArtist.getSlug());
 
@@ -121,21 +125,34 @@ public class ArtistManagementService implements IArtistManagementService {
         String uploadPath = ARTIST_IMAGE_PATH + artist.getSlug() + "/";
         String fileName = imageFile.getOriginalFilename();
 
-        // Need to implement multiple file size uploads and how to store in the database
-        // need to get file name and must append image size on file name to have different versions
-        // Should store array of image file names in database? Should I also include the filepath in the database?
-        // Or can model append image sizes and filepath upon serve to front end?
+        try {
+            for (FileSizes imageSize : FileSizes.values()) {
+                if (imageSize != FileSizes.ORIGINAL) {
+                    logger.info("Uploading {} image size ({}, {})", imageSize.getSizeName(), imageSize.getWidth(), imageSize.getHeight());
 
-        // Maybe have default final file path string in model
-        // Have function in model to getFilePath()
-        // See if model can change image variable before serve to append amazon ulr, getFilePath filepath, and different file sizes?
+                    File tmpFile = new File((imageSize.getSizeName() + "_" + fileName));
 
-        // Maybe this function in charge of changing image sizes and file names and putting them into one list
-        // Then pass off to AmazonS3Service.upload(List<MultipartFile> multipartFiles, String filePath) to upload all at once
-        for (ARTIST_IMAGE_SIZES imageSize : ARTIST_IMAGE_SIZES.values()) {
-            if (imageSize != ARTIST_IMAGE_SIZES.ORIGINAL) {
-                amazonS3Service.upload(imageFile, uploadPath, (imageSize.getSizeName() + "_" + fileName ));
+                    tmpFile.createNewFile();
+
+                    amazonS3Service.upload(imageProcessingUtil.resizeToLimit(imageSize.width, imageSize.height, 1.0, imageFile, tmpFile),
+                            uploadPath, (imageSize.getSizeName() + "_" + fileName ));
+
+                    tmpFile.delete();
+                } else {
+                    logger.info("Uploading original image size ({}, {})", imageSize.getWidth(), imageSize.getHeight());
+
+                    File tmpFile = new File(fileName);
+
+                    tmpFile.createNewFile();
+
+                    amazonS3Service.upload(imageProcessingUtil.resizeToLimit(imageSize.width, imageSize.height, 1.0, imageFile, tmpFile),
+                            uploadPath, fileName);
+
+                    tmpFile.delete();
+                }
             }
+        } catch(IOException e) {
+            e.printStackTrace();
         }
 
         return fileName;

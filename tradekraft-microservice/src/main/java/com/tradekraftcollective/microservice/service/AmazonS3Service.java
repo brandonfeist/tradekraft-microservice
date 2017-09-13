@@ -16,10 +16,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.apache.commons.io.IOUtils;
 
 import javax.imageio.ImageIO;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -54,7 +51,16 @@ public class AmazonS3Service {
         return putObjectResult;
     }
 
-    // Maybe change to List<MultipartFile> instead of array MultipartFile[]
+    private PutObjectResult upload(File file, String uploadKey) {
+        PutObjectRequest putObjectRequest = new PutObjectRequest(bucket, uploadKey, file);
+
+        putObjectRequest.setCannedAcl(CannedAccessControlList.PublicRead);
+
+        PutObjectResult putObjectResult = amazonS3Client.putObject(putObjectRequest);
+
+        return putObjectResult;
+    }
+
     public List<PutObjectResult> upload(MultipartFile[] multipartFiles, String filePath) {
         List<PutObjectResult> putObjectResults = new ArrayList<>();
 
@@ -86,6 +92,18 @@ public class AmazonS3Service {
         } catch (IOException e) {
             e.printStackTrace();
         }
+
+        logger.info("Successfully uploaded file https://s3.amazonaws.com/{}/{}", bucket, uploadKey);
+        return putObjectResult;
+    }
+
+    public PutObjectResult upload(File file, String filePath, String fileName) {
+        logger.info("Uploading file {}", file.getName());
+
+        PutObjectResult putObjectResult = null;
+        String uploadKey = (filePath + fileName);
+
+        putObjectResult = upload(file, uploadKey);
 
         logger.info("Successfully uploaded file https://s3.amazonaws.com/{}/{}", bucket, uploadKey);
         return putObjectResult;
