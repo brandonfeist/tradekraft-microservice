@@ -14,4 +14,6 @@ public interface IArtistManagementService {
     Artist getArtist(String artistSlug);
 
     Artist createArtist(Artist artist, MultipartFile imageFile, StopWatch stopWatch);
+
+    void deleteArtist(String artistSlug);
 }

@@ -1,5 +1,7 @@
 package com.tradekraftcollective.microservice.service.impl;
 
+import com.amazonaws.services.s3.model.ObjectListing;
+import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.github.slugify.Slugify;
 import com.tradekraftcollective.microservice.exception.ErrorCode;
 import com.tradekraftcollective.microservice.exception.ServiceException;
@@ -91,6 +93,20 @@ public class ArtistManagementService implements IArtistManagementService {
         logger.info("***** SUCCESSFULLY CREATED ARTIST WITH SLUG = {}", returnArtist.getSlug());
 
         return returnArtist;
+    }
+
+    @Override
+    public void deleteArtist(String artistSlug) {
+        logger.info("Delete artist, slug: {}", artistSlug);
+
+        artistValidator.validateArtistSlug(artistSlug);
+
+        ObjectListing directoryImages = amazonS3Service.getDirectoryContent((ARTIST_IMAGE_PATH + artistSlug + "/"), null);
+        for (S3ObjectSummary summary: directoryImages.getObjectSummaries()) {
+            amazonS3Service.delete(summary.getKey());
+        }
+
+        artistRepository.deleteBySlug(artistSlug);
     }
 
     private String createArtistSlug(String artistName) {

@@ -77,7 +77,6 @@ public class ArtistManagementController {
 
         logger.info("createArtist [{}] {}", xRequestId, inputArtist);
 
-        imageFile.getContentType();
         StopWatch stopWatch = new StopWatch("createArtist");
 
         Artist artist = artistManagementService.createArtist(inputArtist, imageFile, stopWatch);
@@ -102,6 +101,8 @@ public class ArtistManagementController {
             @RequestHeader(value = "X-Request-ID", required = false) String xRequestId
     ) {
         logger.info("deleteArtist [{}] {}", xRequestId, artistSlug);
+
+        artistManagementService.deleteArtist(artistSlug);
 
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }

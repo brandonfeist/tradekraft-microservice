@@ -3,6 +3,7 @@ package com.tradekraftcollective.microservice.validator;
 import com.tradekraftcollective.microservice.exception.ErrorCode;
 import com.tradekraftcollective.microservice.exception.ServiceException;
 import com.tradekraftcollective.microservice.persistence.entity.Artist;
+import com.tradekraftcollective.microservice.repository.IArtistRepository;
 import com.tradekraftcollective.microservice.utilities.ImageValidationUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,12 +30,21 @@ public class ArtistValidator {
     private final String SPOTIFY_ARTIST_URL_REGEX = "(http:\\/\\/|https:\\/\\/)(www.)?open.spotify.com\\/[^\\/]+\\/[^\\/]+(\\/)?";
 
     @Inject
+    IArtistRepository artistRepository;
+
+    @Inject
     ImageValidationUtil imageValidationUtil;
 
     public void validateArtist(Artist artist, MultipartFile image) {
         validateArtistName(artist);
         validateArtistLinks(artist);
         validateArtistImage(image);
+    }
+
+    public void validateArtistSlug(String artistSlug) {
+        if(artistRepository.findBySlug(artistSlug) == null) {
+            throw new ServiceException(ErrorCode.INVALID_ARTIST_SLUG, "Artist with slug [" + artistSlug + "] does not exist");
+        }
     }
 
     private void validateArtistName(Artist artist) {

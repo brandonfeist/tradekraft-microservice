@@ -15,7 +15,6 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 import org.apache.commons.io.IOUtils;
 
-import javax.imageio.ImageIO;
 import java.io.*;
 import java.net.URLEncoder;
 import java.util.ArrayList;
@@ -82,7 +81,7 @@ public class AmazonS3Service {
     }
 
     public PutObjectResult upload(MultipartFile multipartFile, String filePath, String fileName) {
-        logger.info("Uploading file {}", multipartFile.getOriginalFilename());
+        logger.info("Uploading file: {}", multipartFile.getOriginalFilename());
 
         PutObjectResult putObjectResult = null;
         String uploadKey = (filePath + fileName);
@@ -98,7 +97,7 @@ public class AmazonS3Service {
     }
 
     public PutObjectResult upload(File file, String filePath, String fileName) {
-        logger.info("Uploading file {}", file.getName());
+        logger.info("Uploading file: {}", file.getName());
 
         PutObjectResult putObjectResult = null;
         String uploadKey = (filePath + fileName);
@@ -110,8 +109,28 @@ public class AmazonS3Service {
     }
 
     public void delete(String deleteKey) {
+        logger.info("Deleting AWS Key: {}", deleteKey);
+
         DeleteObjectRequest deleteObjectRequest = new DeleteObjectRequest(bucket, deleteKey);
+
         amazonS3Client.deleteObject(deleteObjectRequest);
+    }
+
+    public ObjectListing getDirectoryContent(String prefix, String delimiter) {
+        logger.info("Getting AWS directory objects with Prefix: {} and Delimiter: {}", prefix, delimiter);
+
+        ListObjectsRequest listObjectsRequest = null;
+
+        if(delimiter != null) {
+            listObjectsRequest = new ListObjectsRequest().withBucketName(bucket)
+                    .withPrefix(prefix)
+                    .withDelimiter(delimiter);
+        } else {
+            listObjectsRequest = new ListObjectsRequest().withBucketName(bucket)
+                    .withPrefix(prefix);
+        }
+
+        return amazonS3Client.listObjects(listObjectsRequest);
     }
 
     public ResponseEntity<byte[]> download(String key) throws IOException {

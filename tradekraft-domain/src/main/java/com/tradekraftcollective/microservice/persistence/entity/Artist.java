@@ -21,7 +21,7 @@ public class Artist {
     public enum FileSizes {
         ORIGINAL("original", 1024, 1024),
         MEDIUM("medium", 512, 512),
-        THUMB("thumb", 150, 150);
+        THUMB("thumb", 350, 350);
 
         private String sizeName;
         private int width;
@@ -55,7 +55,7 @@ public class Artist {
     @JsonIgnore
     @Getter(AccessLevel.NONE)
     @Setter(AccessLevel.NONE)
-    private final String AWS_URL = "https://s3.amazonaws.com/tradekraft-assets/uploads/artist/image/";
+    private static final String ARTIST_AWS_URL = "https://s3.amazonaws.com/tradekraft-assets/uploads/artist/image/";
 
     @Id
     @Column(name = "id", nullable = false)
@@ -101,10 +101,10 @@ public class Artist {
         for (FileSizes imageSize : FileSizes.values()) {
             if (imageSize != Artist.FileSizes.ORIGINAL) {
                 jsonObject.addProperty(imageSize.getSizeName(),
-                        (AWS_URL + slug + "/" + imageSize.getSizeName() + "_" + image));
+                        (ARTIST_AWS_URL + slug + "/" + imageSize.getSizeName() + "_" + image));
             } else {
                 jsonObject.addProperty(imageSize.getSizeName(),
-                        (AWS_URL + slug + "/" + image));
+                        (ARTIST_AWS_URL + slug + "/" + image));
             }
         }
 
