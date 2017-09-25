@@ -43,6 +43,7 @@ public class ArtistValidator {
 
     public void validateArtistSlug(String artistSlug) {
         if(artistRepository.findBySlug(artistSlug) == null) {
+            logger.error("Artist with slug [{}] does not exist", artistSlug);
             throw new ServiceException(ErrorCode.INVALID_ARTIST_SLUG, "Artist with slug [" + artistSlug + "] does not exist");
         }
     }

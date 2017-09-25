@@ -1,9 +1,13 @@
 package com.tradekraftcollective.microservice.service;
 
+import com.amazonaws.services.apigateway.model.PatchOperation;
+import com.github.fge.jsonpatch.JsonPatchOperation;
 import com.tradekraftcollective.microservice.persistence.entity.Artist;
 import org.springframework.data.domain.Page;
 import org.springframework.util.StopWatch;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
 
 /**
  * Created by brandonfeist on 9/5/17.
@@ -14,6 +18,8 @@ public interface IArtistManagementService {
     Artist getArtist(String artistSlug);
 
     Artist createArtist(Artist artist, MultipartFile imageFile, StopWatch stopWatch);
+
+    Artist patchArtist(final List<JsonPatchOperation> patchOperations, final MultipartFile imageFile, final String artistSlug);
 
     void deleteArtist(String artistSlug);
 }

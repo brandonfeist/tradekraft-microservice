@@ -7,6 +7,7 @@ import org.springframework.http.HttpStatus;
  */
 public enum ErrorCode {
 
+    INVALID_ARTIST(HttpStatus.BAD_REQUEST.value(), "Invalid artist"),
     INVALID_ARTIST_SLUG(HttpStatus.BAD_REQUEST.value(), "Invalid artist slug"),
     INVALID_ARTIST_NAME(HttpStatus.BAD_REQUEST.value(), "Invalid artist name"),
     INVALID_ARTIST_URL(HttpStatus.BAD_REQUEST.value(), "Invalid artist url"),

@@ -2,6 +2,7 @@ package com.tradekraftcollective.microservice.service.impl;
 
 import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
+import com.github.fge.jsonpatch.JsonPatchOperation;
 import com.github.slugify.Slugify;
 import com.tradekraftcollective.microservice.exception.ErrorCode;
 import com.tradekraftcollective.microservice.exception.ServiceException;
@@ -17,12 +18,14 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StopWatch;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.inject.Inject;
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 
 /**
  * Created by brandonfeist on 9/5/17.
@@ -39,6 +42,9 @@ public class ArtistManagementService implements IArtistManagementService {
 
     @Inject
     ArtistValidator artistValidator;
+
+    @Inject
+    ArtistPatchService artistPatchService;
 
     @Inject
     ImageProcessingUtil imageProcessingUtil;
@@ -93,6 +99,28 @@ public class ArtistManagementService implements IArtistManagementService {
         logger.info("***** SUCCESSFULLY CREATED ARTIST WITH SLUG = {}", returnArtist.getSlug());
 
         return returnArtist;
+    }
+
+    @Override
+    @Transactional(rollbackFor = {RuntimeException.class, ServiceException.class})
+    public Artist patchArtist(List<JsonPatchOperation> patchOperations, MultipartFile imageFile, String artistSlug) {
+        Artist oldArtist = artistRepository.findBySlug(artistSlug);
+        if(oldArtist == null) {
+            logger.error("Artist with slug [{}] does not exist", artistSlug);
+            throw new ServiceException(ErrorCode.INVALID_ARTIST_SLUG, "Artist with slug [" + artistSlug + "] does not exist");
+        }
+
+        if(imageFile != null) {
+//            JsonPatchOperation imagePatch = new Jo();
+
+//            patchOperations.add(imagePatch);
+        }
+
+        Artist patchedArtist = artistPatchService.patchArtist(patchOperations, oldArtist);
+
+        // Should upload images last just in case of rollback, same with createArtist
+
+        return patchedArtist;
     }
 
     @Override

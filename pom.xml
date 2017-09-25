@@ -28,6 +28,7 @@
     <modules>
         <module>tradekraft-microservice</module>
         <module>tradekraft-domain</module>
+        <module>jsonpatch</module>
     </modules>
 
     <dependencies>

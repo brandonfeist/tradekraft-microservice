@@ -1,5 +1,6 @@
 package com.tradekraftcollective.microservice.controller;
 
+import com.github.fge.jsonpatch.JsonPatchOperation;
 import com.tradekraftcollective.microservice.persistence.entity.Artist;
 import com.tradekraftcollective.microservice.repository.IArtistRepository;
 import com.tradekraftcollective.microservice.service.IArtistManagementService;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.inject.Inject;
+import java.util.List;
 
 /**
  * Created by brandonfeist on 9/12/17.
@@ -84,15 +86,18 @@ public class ArtistManagementController {
         return new ResponseEntity<>(artist, HttpStatus.CREATED);
     }
 
-    @RequestMapping(value = "/{slug}", method = RequestMethod.PATCH, produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
+    @RequestMapping(value = "/{slug}", method = RequestMethod.PATCH, produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> patchArtist(
             @PathVariable("slug") String artistSlug,
-//            @RequestBody
+            @RequestPart("patch") List<JsonPatchOperation> patches,
+            @RequestPart(value = "image", required = false) MultipartFile imageFile,
             @RequestHeader(value = "X-Request-ID", required = false) String xRequestId
     ) {
         logger.info("patchArtist [{}] {}", xRequestId, artistSlug);
 
-        return new ResponseEntity<>(null, HttpStatus.OK);
+        final Artist artist = artistManagementService.patchArtist(patches, imageFile, artistSlug);
+
+        return new ResponseEntity<>(artist, HttpStatus.OK);
     }
 
     @RequestMapping(value = "/{slug}", method = RequestMethod.DELETE)
