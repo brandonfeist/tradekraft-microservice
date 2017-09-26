@@ -45,12 +45,18 @@ public abstract class PathValueOperation
      * @param path affected path
      * @param value JSON value
      */
-    protected PathValueOperation(final String op, final JsonPointer path,
+    public PathValueOperation(final String op, final JsonPointer path,
         final JsonNode value)
     {
         super(op, path);
         this.value = value.deepCopy();
     }
+
+    public String getOp() { return op; }
+
+    public JsonPointer getPath() { return path; }
+
+    public JsonNode getValue() { return value; }
 
     @Override
     public final void serialize(final JsonGenerator jgen,

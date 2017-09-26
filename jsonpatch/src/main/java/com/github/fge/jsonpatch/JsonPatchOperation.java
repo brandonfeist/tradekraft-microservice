@@ -72,6 +72,8 @@ public abstract class JsonPatchOperation
      */
     protected final JsonPointer path;
 
+    public String getOp() { return op; }
+
     /**
      * Constructor
      *
@@ -83,7 +85,7 @@ public abstract class JsonPatchOperation
         this.op = op;
         this.path = path;
     }
-    
+
     /**
      * Apply this operation to a JSON value
      *

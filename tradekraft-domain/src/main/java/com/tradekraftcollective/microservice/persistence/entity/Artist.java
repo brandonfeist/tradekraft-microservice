@@ -95,6 +95,11 @@ public class Artist {
     @Column(name = "updated_at")
     private Date updatedAt;
 
+    @JsonIgnore
+    public String getImageName() {
+        return image;
+    }
+
     public String getImage() {
         JsonObject jsonObject = new JsonObject();
 

@@ -41,6 +41,11 @@ public class ArtistValidator {
         validateArtistImage(image);
     }
 
+    public void validateArtist(Artist artist) {
+        validateArtistName(artist);
+        validateArtistLinks(artist);
+    }
+
     public void validateArtistSlug(String artistSlug) {
         if(artistRepository.findBySlug(artistSlug) == null) {
             logger.error("Artist with slug [{}] does not exist", artistSlug);
@@ -49,39 +54,44 @@ public class ArtistValidator {
     }
 
     private void validateArtistName(Artist artist) {
-        if(artist.getName() == null) {
+        if(artist.getName() == null || artist.getName().isEmpty()) {
             logger.error("Missing artist name.");
             throw new ServiceException(ErrorCode.INVALID_ARTIST_NAME, "artist name must be present.");
         }
     }
 
     private void validateArtistLinks(Artist artist) {
-        if((artist.getSoundcloud() != null) &&
+        if(!(artist.getSoundcloud() == null || artist.getSoundcloud().isEmpty()) &&
                 !Pattern.compile(SOUNDCLOUD_ARTIST_URL_REGEX).matcher(artist.getSoundcloud()).find()) {
+
             logger.error("Invalid soundcloud url [{}]", artist.getSoundcloud());
             throw new ServiceException(ErrorCode.INVALID_ARTIST_URL, "invalid soundcloud url.");
         }
 
-        if((artist.getFacebook() != null) &&
+        if(!(artist.getFacebook() == null || artist.getFacebook().isEmpty()) &&
                 !Pattern.compile(FACEBOOK_ARTIST_URL_REGEX).matcher(artist.getFacebook()).find()) {
+
             logger.error("Invalid facebook url [{}]", artist.getFacebook());
             throw new ServiceException(ErrorCode.INVALID_ARTIST_URL, "invalid facebook url.");
         }
 
-        if((artist.getTwitter() != null) &&
+        if(!(artist.getTwitter() == null || artist.getTwitter().isEmpty()) &&
                 !Pattern.compile(TWITTER_ARTIST_URL_REGEX).matcher(artist.getTwitter()).find()) {
+
             logger.error("Invalid twitter url [{}]", artist.getTwitter());
             throw new ServiceException(ErrorCode.INVALID_ARTIST_URL, "invalid twitter url.");
         }
 
-        if((artist.getInstagram() != null) &&
+        if(!(artist.getInstagram() == null || artist.getInstagram().isEmpty()) &&
                 !Pattern.compile(INSTAGRAM_ARTIST_URL_REGEX).matcher(artist.getInstagram()).find()) {
+
             logger.error("Invalid instagram url [{}]", artist.getInstagram());
             throw new ServiceException(ErrorCode.INVALID_ARTIST_URL, "invalid instagram url.");
         }
 
-        if((artist.getSpotify() != null) &&
+        if(!(artist.getSpotify() == null || artist.getSpotify().isEmpty()) &&
                 !Pattern.compile(SPOTIFY_ARTIST_URL_REGEX).matcher(artist.getSpotify()).find()) {
+
             logger.error("Invalid spotify url [{}]", artist.getSpotify());
             throw new ServiceException(ErrorCode.INVALID_ARTIST_URL, "invalid spotify url.");
         }

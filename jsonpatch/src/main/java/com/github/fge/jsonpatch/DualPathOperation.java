@@ -21,6 +21,7 @@ package com.github.fge.jsonpatch;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.jsontype.TypeSerializer;
@@ -51,6 +52,12 @@ public abstract class DualPathOperation
         super(op, path);
         this.from = from;
     }
+
+    public String getOp() { return op; }
+
+    public JsonPointer getFrom() { return from; }
+
+    public JsonPointer getPath() { return path; }
 
     @Override
     public final void serialize(final JsonGenerator jgen,

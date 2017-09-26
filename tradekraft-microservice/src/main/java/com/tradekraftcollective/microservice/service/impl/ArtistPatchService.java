@@ -2,9 +2,8 @@ package com.tradekraftcollective.microservice.service.impl;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.fge.jsonpatch.JsonPatch;
-import com.github.fge.jsonpatch.JsonPatchException;
-import com.github.fge.jsonpatch.JsonPatchOperation;
+import com.github.fge.jsonpatch.*;
+import com.tradekraftcollective.microservice.constants.PatchOperationConstants;
 import com.tradekraftcollective.microservice.exception.ErrorCode;
 import com.tradekraftcollective.microservice.exception.ServiceException;
 import com.tradekraftcollective.microservice.persistence.entity.Artist;
@@ -13,6 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import javax.inject.Inject;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -49,6 +49,20 @@ public class ArtistPatchService implements IArtistPatchService {
         pathMap.put(ARTIST_TWITTER_PATH, ARTIST_TWITTER_PATH);
         pathMap.put(ARTIST_INSTAGRAM_PATH, ARTIST_INSTAGRAM_PATH);
         pathMap.put(ARTIST_SPOTIFY_PATH, ARTIST_SPOTIFY_PATH);
+
+        for(JsonPatchOperation operation : patchOperations) {
+            if(PatchOperationConstants.COPY.equals(operation.getOp())
+                    || PatchOperationConstants.MOVE.equals(operation.getOp())) {
+                DualPathOperation dualPathOperation = (DualPathOperation) operation;
+
+            } else if(PatchOperationConstants.REMOVE.equals(operation.getOp())) {
+                RemoveOperation removeOperation = (RemoveOperation) operation;
+
+            } else {
+                PathValueOperation pathValueOperation = (PathValueOperation) operation;
+
+            }
+        }
 
         ObjectMapper objectMapper = new ObjectMapper();
         JsonNode artistJsonNode = objectMapper.valueToTree(artist);

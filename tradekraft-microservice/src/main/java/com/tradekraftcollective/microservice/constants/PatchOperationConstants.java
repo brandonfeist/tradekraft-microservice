@@ -5,16 +5,16 @@ package com.tradekraftcollective.microservice.constants;
  */
 public class PatchOperationConstants {
 
-    public static final String ADD = "ADD";
+    public static final String ADD = "add";
 
-    public static final String REMOVE = "REMOVE";
+    public static final String REMOVE = "remove";
 
-    public static final String REPLACE = "REPLACE";
+    public static final String REPLACE = "replace";
 
-    public static final String COPY = "COPY";
+    public static final String COPY = "copy";
 
-    public static final String MOVE = "MOVE";
+    public static final String MOVE = "move";
 
-    public static final String TEST = "TEST";
+    public static final String TEST = "test";
 
 }

@@ -2,8 +2,12 @@ package com.tradekraftcollective.microservice.service.impl;
 
 import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.fge.jackson.jsonpointer.JsonPointer;
 import com.github.fge.jsonpatch.JsonPatchOperation;
+import com.github.fge.jsonpatch.PathValueOperation;
 import com.github.slugify.Slugify;
+import com.tradekraftcollective.microservice.constants.PatchOperationConstants;
 import com.tradekraftcollective.microservice.exception.ErrorCode;
 import com.tradekraftcollective.microservice.exception.ServiceException;
 import com.tradekraftcollective.microservice.persistence.entity.Artist;
@@ -96,13 +100,13 @@ public class ArtistManagementService implements IArtistManagementService {
         Artist returnArtist = artistRepository.save(artist);
 
         stopWatch.stop();
-        logger.info("***** SUCCESSFULLY CREATED ARTIST WITH SLUG = {}", returnArtist.getSlug());
+        logger.info("***** SUCCESSFULLY CREATED ARTIST WITH SLUG = {} *****", returnArtist.getSlug());
 
         return returnArtist;
     }
 
     @Override
-    @Transactional(rollbackFor = {RuntimeException.class, ServiceException.class})
+    @Transactional(rollbackFor = {RuntimeException.class, ServiceException.class, IOException.class})
     public Artist patchArtist(List<JsonPatchOperation> patchOperations, MultipartFile imageFile, String artistSlug) {
         Artist oldArtist = artistRepository.findBySlug(artistSlug);
         if(oldArtist == null) {
@@ -110,15 +114,61 @@ public class ArtistManagementService implements IArtistManagementService {
             throw new ServiceException(ErrorCode.INVALID_ARTIST_SLUG, "Artist with slug [" + artistSlug + "] does not exist");
         }
 
-        if(imageFile != null) {
-//            JsonPatchOperation imagePatch = new Jo();
+        boolean uploadingNewImage = (imageFile != null);
+        if(uploadingNewImage) {
+            JsonPatchOperation imageOperation;
+            ObjectMapper objectMapper = new ObjectMapper();
 
-//            patchOperations.add(imagePatch);
+            try {
+                if (oldArtist.getImage() != null) {
+                    logger.info("New image found, creating imagePatch operation: [{}], overwriting image: {}",
+                            PatchOperationConstants.REPLACE, oldArtist.getImageName());
+
+                    String jsonImageReplacePatch = "{\"op\": \"" + PatchOperationConstants.REPLACE + "\", " +
+                            "\"path\": \"" + ArtistPatchService.ARTIST_IMAGE_PATH + "\", " +
+                            "\"value\": \"" + imageFile.getOriginalFilename() + "\"}";
+
+                    imageOperation = objectMapper.readValue(jsonImageReplacePatch, JsonPatchOperation.class);
+
+                    patchOperations.add(imageOperation);
+                } else {
+                    logger.info("New image found, creating imagePatch operation: {}", PatchOperationConstants.ADD);
+
+                    String jsonImageReplacePatch = "{\"op\": \"" + PatchOperationConstants.ADD + "\", " +
+                            "\"path\": \"" + ArtistPatchService.ARTIST_IMAGE_PATH + "\", " +
+                            "\"value\": \"" + imageFile.getOriginalFilename() + "\"}";
+
+                    imageOperation = objectMapper.readValue(jsonImageReplacePatch, JsonPatchOperation.class);
+
+                    patchOperations.add(imageOperation);
+                }
+            } catch(IOException e) {
+                e.printStackTrace();
+            }
         }
 
         Artist patchedArtist = artistPatchService.patchArtist(patchOperations, oldArtist);
 
-        // Should upload images last just in case of rollback, same with createArtist
+        if(!oldArtist.getName().equals(patchedArtist.getName())) {
+            patchedArtist.setSlug(createArtistSlug(patchedArtist.getName()));
+        }
+
+        if(uploadingNewImage) {
+            artistValidator.validateArtist(patchedArtist, imageFile);
+
+            ObjectListing directoryImages = amazonS3Service.getDirectoryContent((ARTIST_IMAGE_PATH + artistSlug + "/"), null);
+            for (S3ObjectSummary summary: directoryImages.getObjectSummaries()) {
+                amazonS3Service.delete(summary.getKey());
+            }
+
+            patchedArtist.setImage(uploadArtistImage(patchedArtist, imageFile));
+        } else {
+            artistValidator.validateArtist(patchedArtist);
+        }
+
+        artistRepository.save(patchedArtist);
+
+        logger.info("***** SUCCESSFULLY PATCHED ARTIST WITH SLUG = {} *****", patchedArtist.getSlug());
 
         return patchedArtist;
     }
@@ -135,6 +185,8 @@ public class ArtistManagementService implements IArtistManagementService {
         }
 
         artistRepository.deleteBySlug(artistSlug);
+
+        logger.info("***** SUCCESSFULLY DELETED ARTIST WITH SLUG = {} *****", artistSlug);
     }
 
     private String createArtistSlug(String artistName) {
