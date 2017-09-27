@@ -68,7 +68,9 @@ public class GenreManagementController {
 
         StopWatch stopWatch = new StopWatch("createGenre");
 
-        return new ResponseEntity<>(null, HttpStatus.CREATED);
+        Genre genre = genreManagementService.createGenre(inputGenre, stopWatch);
+
+        return new ResponseEntity<>(genre, HttpStatus.CREATED);
     }
 
     @RequestMapping(value = "/{id}", method = RequestMethod.PATCH, produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)

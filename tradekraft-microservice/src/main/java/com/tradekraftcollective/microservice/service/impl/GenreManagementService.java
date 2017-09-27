@@ -3,10 +3,11 @@ package com.tradekraftcollective.microservice.service.impl;
 import com.github.fge.jsonpatch.JsonPatchOperation;
 import com.tradekraftcollective.microservice.exception.ErrorCode;
 import com.tradekraftcollective.microservice.exception.ServiceException;
-import com.tradekraftcollective.microservice.persistence.entity.Artist;
 import com.tradekraftcollective.microservice.persistence.entity.Genre;
 import com.tradekraftcollective.microservice.repository.IGenreRepository;
 import com.tradekraftcollective.microservice.service.IGenreManagementService;
+import com.tradekraftcollective.microservice.utilities.ColorUtility;
+import com.tradekraftcollective.microservice.validator.GenreValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
@@ -29,6 +30,12 @@ public class GenreManagementService implements IGenreManagementService {
 
     @Inject
     IGenreRepository genreRepository;
+
+    @Inject
+    GenreValidator genreValidator;
+
+    @Inject
+    ColorUtility colorUtility;
 
     @Override
     public Page<Genre> getGenres(int page, int pageSize, String sortField, String sortOrder) {
@@ -58,7 +65,21 @@ public class GenreManagementService implements IGenreManagementService {
 
     @Override
     public Genre createGenre(Genre genre, StopWatch stopWatch) {
-        return null;
+        logger.info("Create genre, name: {}", genre.getName());
+
+        stopWatch.start("validateGenre");
+        genreValidator.validateGenre(genre);
+        stopWatch.stop();
+
+        stopWatch.start("saveGenre");
+
+        genre.setHue(colorUtility.rgbToHue(colorUtility.hexToRgb(genre.getColor())));
+        Genre returnGenre = genreRepository.save(genre);
+
+        stopWatch.stop();
+        logger.info("***** SUCCESSFULLY CREATED GENRE WITH ID = {} *****", genre.getId());
+
+        return returnGenre;
     }
 
     @Override

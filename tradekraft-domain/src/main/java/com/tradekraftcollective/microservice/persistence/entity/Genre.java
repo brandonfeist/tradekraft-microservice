@@ -13,21 +13,22 @@ public class Genre {
 
     @Id
     @Column(name = "id", nullable = false)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "name")
+    @Column(name = "name", nullable = false)
     private String name;
 
-    @Column(name = "color")
+    @Column(name = "color", nullable = false)
     private String color;
 
-    @Column(name = "hue")
+    @Column(name = "hue", nullable = false)
     private Integer hue;
 
-    @Column(name = "created_at")
+    @Column(name = "created_at", nullable = false)
     private Date createdAt;
 
-    @Column(name = "updated_at")
+    @Column(name = "updated_at", nullable = false)
     private Date updatedAt;
 
     @PrePersist

@@ -62,13 +62,13 @@ public class Artist {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "name")
+    @Column(name = "name", nullable = false)
     private String name;
 
     @Column(name = "description")
     private String description;
 
-    @Column(name = "image")
+    @Column(name = "image", nullable = false)
     private String image;
 
     @Column(name = "soundcloud")
@@ -89,10 +89,10 @@ public class Artist {
     @Column(name = "slug")
     private String slug;
 
-    @Column(name = "created_at")
+    @Column(name = "created_at", nullable = false)
     private Date createdAt;
 
-    @Column(name = "updated_at")
+    @Column(name = "updated_at", nullable = false)
     private Date updatedAt;
 
     @JsonIgnore

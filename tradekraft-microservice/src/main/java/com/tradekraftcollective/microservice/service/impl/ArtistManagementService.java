@@ -3,9 +3,7 @@ package com.tradekraftcollective.microservice.service.impl;
 import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.fge.jackson.jsonpointer.JsonPointer;
 import com.github.fge.jsonpatch.JsonPatchOperation;
-import com.github.fge.jsonpatch.PathValueOperation;
 import com.github.slugify.Slugify;
 import com.tradekraftcollective.microservice.constants.PatchOperationConstants;
 import com.tradekraftcollective.microservice.exception.ErrorCode;
@@ -87,7 +85,6 @@ public class ArtistManagementService implements IArtistManagementService {
     @Override
     public Artist createArtist(Artist artist, MultipartFile imageFile, StopWatch stopWatch) {
         logger.info("Create artist, name: {}", artist.getName());
-
 
         stopWatch.start("validateArtist");
         artistValidator.validateArtist(artist, imageFile);
@@ -174,6 +171,7 @@ public class ArtistManagementService implements IArtistManagementService {
         artistRepository.save(patchedArtist);
 
         stopWatch.stop();
+
         logger.info("***** SUCCESSFULLY PATCHED ARTIST WITH SLUG = {} *****", patchedArtist.getSlug());
 
         return patchedArtist;

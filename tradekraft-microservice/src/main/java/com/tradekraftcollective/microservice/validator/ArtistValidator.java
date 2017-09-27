@@ -23,11 +23,11 @@ import java.util.regex.Pattern;
 public class ArtistValidator {
     private static final Logger logger = LoggerFactory.getLogger(ArtistValidator.class);
 
-    private final String SOUNDCLOUD_ARTIST_URL_REGEX = "(http:\\/\\/|https:\\/\\/)(www.)?soundcloud.com\\/[^\\/]+(\\/)?";
-    private final String FACEBOOK_ARTIST_URL_REGEX = "(http:\\/\\/|https:\\/\\/)(www.)?facebook.com\\/[^\\/]+(\\/)?";
-    private final String TWITTER_ARTIST_URL_REGEX = "(http:\\/\\/|https:\\/\\/)(www.)?twitter.com\\/[^\\/]+(\\/)?";
-    private final String INSTAGRAM_ARTIST_URL_REGEX = "(http:\\/\\/|https:\\/\\/)(www.)?instagram.com\\/[^\\/]+(\\/)?";
-    private final String SPOTIFY_ARTIST_URL_REGEX = "(http:\\/\\/|https:\\/\\/)(www.)?open.spotify.com\\/[^\\/]+\\/[^\\/]+(\\/)?";
+    private final String SOUNDCLOUD_ARTIST_URL_REGEX = "^(http:\\/\\/|https:\\/\\/)(www.)?soundcloud.com\\/[^\\/]+(\\/)?$";
+    private final String FACEBOOK_ARTIST_URL_REGEX = "^(http:\\/\\/|https:\\/\\/)(www.)?facebook.com\\/[^\\/]+(\\/)?$";
+    private final String TWITTER_ARTIST_URL_REGEX = "^(http:\\/\\/|https:\\/\\/)(www.)?twitter.com\\/[^\\/]+(\\/)?$";
+    private final String INSTAGRAM_ARTIST_URL_REGEX = "^(http:\\/\\/|https:\\/\\/)(www.)?instagram.com\\/[^\\/]+(\\/)?$";
+    private final String SPOTIFY_ARTIST_URL_REGEX = "^(http:\\/\\/|https:\\/\\/)(www.)?open.spotify.com\\/[^\\/]+\\/[^\\/]+(\\/)?$";
 
     @Inject
     IArtistRepository artistRepository;
