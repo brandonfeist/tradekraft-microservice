@@ -1,15 +1,19 @@
 package com.tradekraftcollective.microservice.controller;
 
 import com.github.fge.jsonpatch.JsonPatchOperation;
+import com.tradekraftcollective.microservice.persistence.entity.Artist;
 import com.tradekraftcollective.microservice.persistence.entity.Genre;
+import com.tradekraftcollective.microservice.service.IGenreManagementService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.StopWatch;
 import org.springframework.web.bind.annotation.*;
 
+import javax.inject.Inject;
 import java.util.List;
 
 /**
@@ -25,6 +29,9 @@ public class GenreManagementController {
     private static final String SORT_ORDER_DESC = "asc";
     private static final String SORT_FIELD_NAME = "name";
 
+    @Inject
+    IGenreManagementService genreManagementService;
+
     @RequestMapping(method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> getGenres(
             @RequestParam(value = "page", defaultValue = DEFAULT_PAGE_NUM, required = false) Integer page,
@@ -35,18 +42,21 @@ public class GenreManagementController {
     ) {
         logger.info("getGenres [{}]", xRequestId);
 
+        Page<Genre> genres = genreManagementService.getGenres(page, pageSize, sortField, sortOrder);
 
-        return new ResponseEntity<>(null, HttpStatus.OK);
+        return new ResponseEntity<>(genres, HttpStatus.OK);
     }
 
     @RequestMapping(value = "/{id}", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> getGenre(
-            @PathVariable("id") String genreId,
+            @PathVariable("id") Long genreId,
             @RequestHeader(value = "X-Request-ID", required = false) String xRequestId
     ) {
         logger.info("getGenre [{}]", xRequestId);
 
-        return new ResponseEntity<>(null, HttpStatus.OK);
+        Genre genre = genreManagementService.getGenre(genreId);
+
+        return new ResponseEntity<>(genre, HttpStatus.OK);
     }
 
     @RequestMapping(method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
@@ -63,7 +73,7 @@ public class GenreManagementController {
 
     @RequestMapping(value = "/{id}", method = RequestMethod.PATCH, produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> patchGenre(
-            @PathVariable("id") String genreId,
+            @PathVariable("id") Long genreId,
             @RequestBody List<JsonPatchOperation> patches,
             @RequestHeader(value = "X-Request-ID", required = false) String xRequestId
     ) {
@@ -76,7 +86,7 @@ public class GenreManagementController {
 
     @RequestMapping(value = "/{id}", method = RequestMethod.DELETE)
     public ResponseEntity<?> deleteGenre(
-            @PathVariable("id") String genreId,
+            @PathVariable("id") Long genreId,
             @RequestHeader(value = "X-Request-ID", required = false) String xRequestId
     ) {
         logger.info("deleteGenre [{}] {}", xRequestId, genreId);
