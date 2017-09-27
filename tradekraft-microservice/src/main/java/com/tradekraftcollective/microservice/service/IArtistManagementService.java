@@ -19,7 +19,7 @@ public interface IArtistManagementService {
 
     Artist createArtist(Artist artist, MultipartFile imageFile, StopWatch stopWatch);
 
-    Artist patchArtist(final List<JsonPatchOperation> patchOperations, final MultipartFile imageFile, final String artistSlug);
+    Artist patchArtist(final List<JsonPatchOperation> patchOperations, final MultipartFile imageFile, final String artistSlug, StopWatch stopWatch);
 
     void deleteArtist(String artistSlug);
 }

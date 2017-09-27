@@ -107,12 +107,15 @@ public class ArtistManagementService implements IArtistManagementService {
 
     @Override
     @Transactional(rollbackFor = {RuntimeException.class, ServiceException.class, IOException.class})
-    public Artist patchArtist(List<JsonPatchOperation> patchOperations, MultipartFile imageFile, String artistSlug) {
+    public Artist patchArtist(List<JsonPatchOperation> patchOperations, MultipartFile imageFile, String artistSlug, StopWatch stopWatch) {
+
+        stopWatch.start("getOldArtist");
         Artist oldArtist = artistRepository.findBySlug(artistSlug);
         if(oldArtist == null) {
             logger.error("Artist with slug [{}] does not exist", artistSlug);
             throw new ServiceException(ErrorCode.INVALID_ARTIST_SLUG, "Artist with slug [" + artistSlug + "] does not exist");
         }
+        stopWatch.stop();
 
         boolean uploadingNewImage = (imageFile != null);
         if(uploadingNewImage) {
@@ -147,6 +150,8 @@ public class ArtistManagementService implements IArtistManagementService {
             }
         }
 
+        stopWatch.start("patchArtist");
+
         Artist patchedArtist = artistPatchService.patchArtist(patchOperations, oldArtist);
 
         if(!oldArtist.getName().equals(patchedArtist.getName())) {
@@ -168,6 +173,7 @@ public class ArtistManagementService implements IArtistManagementService {
 
         artistRepository.save(patchedArtist);
 
+        stopWatch.stop();
         logger.info("***** SUCCESSFULLY PATCHED ARTIST WITH SLUG = {} *****", patchedArtist.getSlug());
 
         return patchedArtist;

@@ -65,18 +65,10 @@ public class ArtistManagementController {
 
     @RequestMapping(method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> createArtist(
-            @RequestParam("name") String name,
-            @RequestParam(value = "description", required = false) String description,
-            @RequestParam("image") MultipartFile imageFile,
-            @RequestParam(value = "soundcloud", required = false) String soundcloud,
-            @RequestParam(value = "facebook", required = false) String facebook,
-            @RequestParam(value = "twitter", required = false) String twitter,
-            @RequestParam(value = "instagram", required = false) String instagram,
-            @RequestParam(value = "spotify", required = false) String spotify,
+            @RequestPart("artist") Artist inputArtist,
+            @RequestPart("image") MultipartFile imageFile,
             @RequestHeader(value = "X-Request-ID", required = false) String xRequestId
     ) {
-        Artist inputArtist = new Artist(name, description, soundcloud, facebook, twitter, instagram, spotify);
-
         logger.info("createArtist [{}] {}", xRequestId, inputArtist);
 
         StopWatch stopWatch = new StopWatch("createArtist");
@@ -95,7 +87,9 @@ public class ArtistManagementController {
     ) {
         logger.info("patchArtist [{}] {}", xRequestId, artistSlug);
 
-        final Artist artist = artistManagementService.patchArtist(patches, imageFile, artistSlug);
+        StopWatch stopWatch = new StopWatch("patchArtist");
+
+        final Artist artist = artistManagementService.patchArtist(patches, imageFile, artistSlug, stopWatch);
 
         return new ResponseEntity<>(artist, HttpStatus.OK);
     }
