@@ -12,6 +12,7 @@ public enum ErrorCode {
     INVALID_ARTIST_NAME(HttpStatus.BAD_REQUEST.value(), "Invalid artist name"),
     INVALID_ARTIST_URL(HttpStatus.BAD_REQUEST.value(), "Invalid artist url"),
 
+    INVALID_GENRE(HttpStatus.BAD_REQUEST.value(), "Invalid genre"),
     INVALID_GENRE_ID(HttpStatus.BAD_REQUEST.value(), "Invalid genre id"),
     INVALID_GENRE_NAME(HttpStatus.BAD_REQUEST.value(), "Invalid genre name"),
     INVALID_GENRE_COLOR(HttpStatus.BAD_REQUEST.value(), "Invalid genre color"),

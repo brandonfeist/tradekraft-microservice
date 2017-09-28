@@ -83,7 +83,9 @@ public class GenreManagementController {
 
         StopWatch stopWatch = new StopWatch("patchGenre");
 
-        return new ResponseEntity<>(null, HttpStatus.OK);
+        final Genre genre = genreManagementService.patchGenre(patches, genreId, stopWatch);
+
+        return new ResponseEntity<>(genre, HttpStatus.OK);
     }
 
     @RequestMapping(value = "/{id}", method = RequestMethod.DELETE)
@@ -92,6 +94,8 @@ public class GenreManagementController {
             @RequestHeader(value = "X-Request-ID", required = false) String xRequestId
     ) {
         logger.info("deleteGenre [{}] {}", xRequestId, genreId);
+
+        genreManagementService.deleteGenre(genreId);
 
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }

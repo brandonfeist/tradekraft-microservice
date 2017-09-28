@@ -1,6 +1,5 @@
 package com.tradekraftcollective.microservice.service;
 
-import com.amazonaws.services.apigateway.model.PatchOperation;
 import com.github.fge.jsonpatch.JsonPatchOperation;
 import com.tradekraftcollective.microservice.persistence.entity.Artist;
 

@@ -6,6 +6,7 @@ import com.tradekraftcollective.microservice.exception.ServiceException;
 import com.tradekraftcollective.microservice.persistence.entity.Genre;
 import com.tradekraftcollective.microservice.repository.IGenreRepository;
 import com.tradekraftcollective.microservice.service.IGenreManagementService;
+import com.tradekraftcollective.microservice.service.IGenrePatchService;
 import com.tradekraftcollective.microservice.utilities.ColorUtility;
 import com.tradekraftcollective.microservice.validator.GenreValidator;
 import org.slf4j.Logger;
@@ -14,6 +15,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StopWatch;
 
 import javax.inject.Inject;
@@ -30,6 +32,9 @@ public class GenreManagementService implements IGenreManagementService {
 
     @Inject
     IGenreRepository genreRepository;
+
+    @Inject
+    IGenrePatchService genrePatchService;
 
     @Inject
     GenreValidator genreValidator;
@@ -83,12 +88,37 @@ public class GenreManagementService implements IGenreManagementService {
     }
 
     @Override
+    @Transactional(rollbackFor = {RuntimeException.class, ServiceException.class})
     public Genre patchGenre(List<JsonPatchOperation> patchOperations, Long genreId, StopWatch stopWatch) {
-        return null;
+        stopWatch.start("getOldGenre");
+        Genre oldGenre = genreRepository.findOne(genreId);
+        if(oldGenre == null) {
+            logger.error("Genre with id [{}] does not exist", genreId);
+            throw new ServiceException(ErrorCode.INVALID_GENRE_ID, "Genre with id [" + genreId + "] does not exist");
+        }
+        stopWatch.stop();
+
+        stopWatch.start("patchArtist");
+
+        Genre patchedGenre = genrePatchService.patchGenre(patchOperations, oldGenre);
+
+        genreValidator.validateGenre(patchedGenre);
+
+        genreRepository.save(patchedGenre);
+
+        stopWatch.stop();
+
+        logger.info("***** SUCCESSFULLY PATCHED GENRE WITH ID = {} *****", patchedGenre.getId());
+
+        return patchedGenre;
     }
 
     @Override
     public void deleteGenre(Long genreId) {
+        logger.info("Delete genre, id: {}", genreId);
 
+        genreRepository.delete(genreId);
+
+        logger.info("***** SUCCESSFULLY DELETED GENRE WITH ID = {} *****", genreId);
     }
 }

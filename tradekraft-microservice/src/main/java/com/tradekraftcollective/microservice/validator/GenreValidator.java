@@ -34,7 +34,8 @@ public class GenreValidator {
             throw new ServiceException(ErrorCode.INVALID_GENRE_NAME, "genre name must be present.");
         }
 
-        if(genreRepository.findByName(genre.getName()) != null) {
+        Genre validationGenre = genreRepository.findByName(genre.getName());
+        if(validationGenre != null && !validationGenre.getId().equals(genre.getId())) {
             logger.error("Genre with name: {} already exists", genre.getName());
             throw new ServiceException(ErrorCode.INVALID_GENRE_NAME, "genre with name [" + genre.getName() + "] already exists.");
         }
@@ -51,7 +52,8 @@ public class GenreValidator {
             throw new ServiceException(ErrorCode.INVALID_GENRE_COLOR, "must be a hex color format.");
         }
 
-        if(genreRepository.findByColor(genre.getColor()) != null) {
+        Genre validationGenre = genreRepository.findByColor(genre.getColor());
+        if(validationGenre != null && !validationGenre.getId().equals(genre.getId())) {
             logger.error("Genre with color: {} already exists", genre.getColor());
             throw new ServiceException(ErrorCode.INVALID_GENRE_COLOR, "genre with color [" + genre.getColor() + "] already exists.");
         }
