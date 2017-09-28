@@ -38,19 +38,6 @@ public class Artist {
         public int getHeight() { return height; }
     }
 
-    public Artist() {}
-
-    public Artist(String name, String description, String soundcloud, String facebook, String twitter,
-                  String instagram, String spotify) {
-        this.name = name;
-        this.description = description;
-        this.soundcloud = soundcloud;
-        this.facebook = facebook;
-        this.twitter = twitter;
-        this.instagram = instagram;
-        this.spotify = spotify;
-    }
-
     @Transient
     @JsonIgnore
     @Getter(AccessLevel.NONE)
