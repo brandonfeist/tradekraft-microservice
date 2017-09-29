@@ -8,7 +8,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.StopWatch;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.inject.Inject;
 
@@ -41,5 +43,32 @@ public class EventManagementController {
         Page<Event> events = eventManagementService.getEvents(page, pageSize, sortField, sortOrder);
 
         return new ResponseEntity<>(events, HttpStatus.OK);
+    }
+
+    @RequestMapping(value = "/{slug}", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> getEvent(
+            @PathVariable("slug") String eventSlug,
+            @RequestHeader(value = "X-Request-ID", required = false) String xRequestId
+    ) {
+        logger.info("getEvent [{}]", xRequestId);
+
+//        Event event = eventManagementService.getArtist(eventSlug);
+
+        return new ResponseEntity<>(null, HttpStatus.OK);
+    }
+
+    @RequestMapping(method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> createEvent(
+            @RequestPart("event") Event inputEvent,
+            @RequestPart("image") MultipartFile imageFile,
+            @RequestHeader(value = "X-Request-ID", required = false) String xRequestId
+    ) {
+        logger.info("createEvent [{}] {}", xRequestId, inputEvent);
+
+        StopWatch stopWatch = new StopWatch("createArtist");
+
+        Event event = eventManagementService.createEvent(inputEvent, imageFile, stopWatch);
+
+        return new ResponseEntity<>(event, HttpStatus.CREATED);
     }
 }

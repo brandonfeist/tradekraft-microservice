@@ -25,7 +25,6 @@ import org.springframework.util.StopWatch;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.inject.Inject;
-import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
@@ -93,7 +92,11 @@ public class ArtistManagementService implements IArtistManagementService {
         stopWatch.start("saveArtist");
 
         artist.setSlug(createArtistSlug(artist.getName()));
-        artist.setImage(uploadArtistImage(artist, imageFile));
+
+        artist.setImage(imageProcessingUtil.processImageAndUpload(artist.getImageSizes(),
+                (artist.ARTIST_IMAGE_UPLOAD_PATH + artist.getSlug() + "/"),
+                imageFile, 1.0));
+
         Artist returnArtist = artistRepository.save(artist);
 
         stopWatch.stop();
@@ -163,7 +166,9 @@ public class ArtistManagementService implements IArtistManagementService {
                 amazonS3Service.delete(summary.getKey());
             }
 
-            patchedArtist.setImage(uploadArtistImage(patchedArtist, imageFile));
+            patchedArtist.setImage(imageProcessingUtil.processImageAndUpload(patchedArtist.getImageSizes(),
+                    (patchedArtist.ARTIST_IMAGE_UPLOAD_PATH + patchedArtist.getSlug() + "/"),
+                    imageFile, 1.0));
         } else {
             artistValidator.validateArtist(patchedArtist);
         }
@@ -199,42 +204,5 @@ public class ArtistManagementService implements IArtistManagementService {
 
         int duplicateSlugs = artistRepository.findBySlugStartingWith(result).size();
         return duplicateSlugs > 0 ? result.concat("-" + (duplicateSlugs + 1)) : result;
-    }
-
-    private String uploadArtistImage(Artist artist, MultipartFile imageFile) {
-        String uploadPath = ARTIST_IMAGE_PATH + artist.getSlug() + "/";
-        String fileName = imageFile.getOriginalFilename();
-
-        try {
-            for (Artist.FileSizes imageSize : Artist.FileSizes.values()) {
-                if (imageSize != Artist.FileSizes.ORIGINAL) {
-                    logger.debug("Uploading {} image size ({}, {})", imageSize.getSizeName(), imageSize.getWidth(), imageSize.getHeight());
-
-                    File tmpFile = new File((imageSize.getSizeName() + "_" + fileName));
-
-                    tmpFile.createNewFile();
-
-                    amazonS3Service.upload(imageProcessingUtil.resizeToLimit(imageSize.getWidth(), imageSize.getHeight(), 1.0, imageFile, tmpFile),
-                            uploadPath, (imageSize.getSizeName() + "_" + fileName ));
-
-                    tmpFile.delete();
-                } else {
-                    logger.debug("Uploading original image size ({}, {})", imageSize.getWidth(), imageSize.getHeight());
-
-                    File tmpFile = new File(fileName);
-
-                    tmpFile.createNewFile();
-
-                    amazonS3Service.upload(imageProcessingUtil.resizeToLimit(imageSize.getWidth(), imageSize.getHeight(), 1.0, imageFile, tmpFile),
-                            uploadPath, fileName);
-
-                    tmpFile.delete();
-                }
-            }
-        } catch(IOException e) {
-            e.printStackTrace();
-        }
-
-        return fileName;
     }
 }

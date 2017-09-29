@@ -2,13 +2,16 @@ package com.tradekraftcollective.microservice.persistence.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.gson.JsonObject;
+import com.tradekraftcollective.microservice.strategy.ImageSize;
 import lombok.AccessLevel;
 import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 
 import javax.persistence.*;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 /**
  * Created by brandonfeist on 9/4/17.
@@ -17,6 +20,18 @@ import java.util.Date;
 @Data
 @Table(name = "artists")
 public class Artist {
+
+    public static final String ARTIST_IMAGE_UPLOAD_PATH = "uploads/artist/image/";
+
+    @JsonIgnore
+    public List<ImageSize> getImageSizes() {
+        List<ImageSize> imageSizes = new ArrayList<>();
+        imageSizes.add(new ImageSize("original", 1024, 1024));
+        imageSizes.add(new ImageSize("medium", 512, 512));
+        imageSizes.add(new ImageSize("thumb", 350, 350));
+
+        return imageSizes;
+    }
 
     public enum FileSizes {
         ORIGINAL("original", 1024, 1024),

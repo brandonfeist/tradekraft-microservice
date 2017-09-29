@@ -56,7 +56,7 @@ public class ArtistManagementController {
             @PathVariable("slug") String artistSlug,
             @RequestHeader(value = "X-Request-ID", required = false) String xRequestId
     ) {
-        logger.info("getArtists [{}]", xRequestId);
+        logger.info("getArtist [{}]", xRequestId);
 
         Artist artist = artistManagementService.getArtist(artistSlug);
 

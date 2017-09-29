@@ -1,9 +1,12 @@
 package com.tradekraftcollective.microservice.persistence.entity;
 
+import com.tradekraftcollective.microservice.strategy.ImageSize;
 import lombok.Data;
 
 import javax.persistence.*;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 /**
  * Created by brandonfeist on 9/28/17.
@@ -12,6 +15,14 @@ import java.util.Date;
 @Data
 @Table(name = "events")
 public class Event {
+
+    public static final String EVENT_IMAGE_UPLOAD_PATH = "uploads/event/image/";
+    public List<ImageSize> getImageSizes() {
+        List<ImageSize> imageSizes = new ArrayList<>();
+        imageSizes.add(new ImageSize("original", 500, null));
+
+        return imageSizes;
+    }
 
     @Id
     @Column(name = "id", nullable = false)
