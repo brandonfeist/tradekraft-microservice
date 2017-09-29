@@ -5,6 +5,7 @@ import com.tradekraftcollective.microservice.persistence.entity.Event;
 import com.tradekraftcollective.microservice.repository.IEventRepository;
 import com.tradekraftcollective.microservice.service.IEventManagementService;
 import com.tradekraftcollective.microservice.utilities.ImageProcessingUtil;
+import com.tradekraftcollective.microservice.validator.EventValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
@@ -30,6 +31,9 @@ public class EventManagementService implements IEventManagementService {
     IEventRepository eventRepository;
 
     @Inject
+    EventValidator eventValidator;
+
+    @Inject
     ImageProcessingUtil imageProcessingUtil;
 
     @Override
@@ -53,7 +57,7 @@ public class EventManagementService implements IEventManagementService {
         logger.info("Create event, name: {}", event.getName());
 
         stopWatch.start("validateEvent");
-//        artistValidator.validateArtist(artist, imageFile);
+        eventValidator.validateEvent(event, imageFile);
         stopWatch.stop();
 
         stopWatch.start("saveEvent");
@@ -71,6 +75,10 @@ public class EventManagementService implements IEventManagementService {
 
         return returnEvent;
     }
+
+    // patchEvent
+
+    // deleteEvent
 
     private String createEventSlug(String eventName) {
         Slugify slug = new Slugify();
