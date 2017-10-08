@@ -33,26 +33,6 @@ public class Artist {
         return imageSizes;
     }
 
-    public enum FileSizes {
-        ORIGINAL("original", 1024, 1024),
-        MEDIUM("medium", 512, 512),
-        THUMB("thumb", 350, 350);
-
-        private String sizeName;
-        private int width;
-        private int height;
-
-        FileSizes(String sizeName, int width, int height) {
-            this.sizeName = sizeName;
-            this.width = width;
-            this.height = height;
-        }
-
-        public String getSizeName() { return sizeName; }
-        public int getWidth() { return width; }
-        public int getHeight() { return height; }
-    }
-
     @Transient
     @JsonIgnore
     @Getter(AccessLevel.NONE)
@@ -105,13 +85,13 @@ public class Artist {
     public String getImage() {
         JsonObject jsonObject = new JsonObject();
 
-        for (FileSizes imageSize : FileSizes.values()) {
-            if (imageSize != Artist.FileSizes.ORIGINAL) {
-                jsonObject.addProperty(imageSize.getSizeName(),
-                        (ARTIST_AWS_URL + slug + "/" + imageSize.getSizeName() + "_" + image));
-            } else {
+        for (ImageSize imageSize : getImageSizes()) {
+            if (imageSize.getSizeName().equals("original")) {
                 jsonObject.addProperty(imageSize.getSizeName(),
                         (ARTIST_AWS_URL + slug + "/" + image));
+            } else {
+                jsonObject.addProperty(imageSize.getSizeName(),
+                        (ARTIST_AWS_URL + slug + "/" + imageSize.getSizeName() + "_" + image));
             }
         }
 

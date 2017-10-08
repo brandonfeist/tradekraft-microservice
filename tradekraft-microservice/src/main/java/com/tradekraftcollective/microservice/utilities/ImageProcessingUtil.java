@@ -99,10 +99,6 @@ public class ImageProcessingUtil {
         return null;
     }
 
-    public void reduceImageQuality(float percentageToReduceBy) {
-
-    }
-
     public String getImageExtension(MultipartFile image) {
         String fileExtension = null;
 

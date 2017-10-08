@@ -17,8 +17,19 @@ public enum ErrorCode {
     INVALID_GENRE_NAME(HttpStatus.BAD_REQUEST.value(), "Invalid genre name"),
     INVALID_GENRE_COLOR(HttpStatus.BAD_REQUEST.value(), "Invalid genre color"),
 
+    INVALID_EVENT(HttpStatus.BAD_REQUEST.value(), "Invalid event"),
+    INVALID_EVENT_SLUG(HttpStatus.BAD_REQUEST.value(), "Invalid event slug"),
+    INVALID_EVENT_NAME(HttpStatus.BAD_REQUEST.value(), "Invalid event name"),
+    INVALID_EVENT_VENUE_NAME(HttpStatus.BAD_REQUEST.value(), "Invalid event name"),
+    INVALID_EVENT_START_DATE(HttpStatus.BAD_REQUEST.value(), "Invalid event start date"),
+    INVALID_EVENT_END_DATE(HttpStatus.BAD_REQUEST.value(), "Invalid event end date"),
+    INVALID_EVENT_ADDRESS(HttpStatus.BAD_REQUEST.value(), "Invalid event address"),
+    INVALID_EVENT_ENTRY_AGE(HttpStatus.BAD_REQUEST.value(), "Invalid event entry age"),
+
     INVALID_IMAGE_DEMINSIONS(HttpStatus.BAD_REQUEST.value(), "Invalid image dimensions"),
-    INVALID_IMAGE_EXTENSION(HttpStatus.BAD_REQUEST.value(), "Invalid image extension");
+    INVALID_IMAGE_EXTENSION(HttpStatus.BAD_REQUEST.value(), "Invalid image extension"),
+
+    INVALID_DATE_RANGE(HttpStatus.BAD_REQUEST.value(), "Invalid date range");
 
     private final int errorCode;
 

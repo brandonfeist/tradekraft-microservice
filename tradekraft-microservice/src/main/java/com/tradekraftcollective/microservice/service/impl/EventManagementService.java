@@ -1,8 +1,16 @@
 package com.tradekraftcollective.microservice.service.impl;
 
+import com.amazonaws.services.s3.model.ObjectListing;
+import com.amazonaws.services.s3.model.S3ObjectSummary;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.fge.jsonpatch.JsonPatchOperation;
 import com.github.slugify.Slugify;
+import com.tradekraftcollective.microservice.constants.PatchOperationConstants;
+import com.tradekraftcollective.microservice.exception.ErrorCode;
+import com.tradekraftcollective.microservice.exception.ServiceException;
 import com.tradekraftcollective.microservice.persistence.entity.Event;
 import com.tradekraftcollective.microservice.repository.IEventRepository;
+import com.tradekraftcollective.microservice.service.AmazonS3Service;
 import com.tradekraftcollective.microservice.service.IEventManagementService;
 import com.tradekraftcollective.microservice.utilities.ImageProcessingUtil;
 import com.tradekraftcollective.microservice.validator.EventValidator;
@@ -12,10 +20,13 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StopWatch;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.inject.Inject;
+import java.io.IOException;
+import java.util.List;
 
 /**
  * Created by brandonfeist on 9/28/17.
@@ -34,7 +45,13 @@ public class EventManagementService implements IEventManagementService {
     EventValidator eventValidator;
 
     @Inject
+    EventPatchService eventPatchService;
+
+    @Inject
     ImageProcessingUtil imageProcessingUtil;
+
+    @Inject
+    AmazonS3Service amazonS3Service;
 
     @Override
     public Page<Event> getEvents(int page, int pageSize, String sortField, String sortOrder) {
@@ -76,9 +93,98 @@ public class EventManagementService implements IEventManagementService {
         return returnEvent;
     }
 
-    // patchEvent
+    @Override
+    @Transactional(rollbackFor = {RuntimeException.class, ServiceException.class, IOException.class})
+    public Event patchEvent(List<JsonPatchOperation> patchOperations, MultipartFile imageFile, String eventSlug, StopWatch stopWatch) {
 
-    // deleteEvent
+        stopWatch.start("getOldEvent");
+        Event oldEvent = eventRepository.findBySlug(eventSlug);
+        if(oldEvent == null) {
+            logger.error("Event with slug [{}] does not exist", eventSlug);
+            throw new ServiceException(ErrorCode.INVALID_EVENT_SLUG, "Event with slug [" + eventSlug + "] does not exist");
+        }
+        stopWatch.stop();
+
+        boolean uploadingNewImage = (imageFile != null);
+        if(uploadingNewImage) {
+            JsonPatchOperation imageOperation;
+            ObjectMapper objectMapper = new ObjectMapper();
+
+            try {
+                if (oldEvent.getImage() != null) {
+                    logger.info("New image found, creating imagePatch operation: [{}], overwriting image: {}",
+                            PatchOperationConstants.REPLACE, oldEvent.getImageName());
+
+                    String jsonImageReplacePatch = "{\"op\": \"" + PatchOperationConstants.REPLACE + "\", " +
+                            "\"path\": \"" + EventPatchService.EVENT_IMAGE_PATH + "\", " +
+                            "\"value\": \"" + imageFile.getOriginalFilename() + "\"}";
+
+                    imageOperation = objectMapper.readValue(jsonImageReplacePatch, JsonPatchOperation.class);
+
+                    patchOperations.add(imageOperation);
+                } else {
+                    logger.info("New image found, creating imagePatch operation: {}", PatchOperationConstants.ADD);
+
+                    String jsonImageReplacePatch = "{\"op\": \"" + PatchOperationConstants.ADD + "\", " +
+                            "\"path\": \"" + EventPatchService.EVENT_IMAGE_PATH + "\", " +
+                            "\"value\": \"" + imageFile.getOriginalFilename() + "\"}";
+
+                    imageOperation = objectMapper.readValue(jsonImageReplacePatch, JsonPatchOperation.class);
+
+                    patchOperations.add(imageOperation);
+                }
+            } catch(IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+        stopWatch.start("patchEvent");
+
+        Event patchedEvent = eventPatchService.patchEvent(patchOperations, oldEvent);
+
+        if(!oldEvent.getName().equals(patchedEvent.getName())) {
+            patchedEvent.setSlug(createEventSlug(patchedEvent.getName()));
+        }
+
+        if(uploadingNewImage) {
+            eventValidator.validateEvent(patchedEvent, imageFile);
+
+            ObjectListing directoryImages = amazonS3Service.getDirectoryContent((EVENT_IMAGE_PATH + eventSlug + "/"), null);
+            for (S3ObjectSummary summary: directoryImages.getObjectSummaries()) {
+                amazonS3Service.delete(summary.getKey());
+            }
+
+            patchedEvent.setImage(imageProcessingUtil.processImageAndUpload(patchedEvent.getImageSizes(),
+                    (patchedEvent.EVENT_IMAGE_UPLOAD_PATH + patchedEvent.getSlug() + "/"),
+                    imageFile, 1.0));
+        } else {
+            eventValidator.validateEvent(patchedEvent);
+        }
+
+        eventRepository.save(patchedEvent);
+
+        stopWatch.stop();
+
+        logger.info("***** SUCCESSFULLY PATCHED EVENT WITH SLUG = {} *****", patchedEvent.getSlug());
+
+        return patchedEvent;
+    }
+
+    @Override
+    public void deleteEvent(String eventSlug) {
+        logger.info("Delete event, slug: {}", eventSlug);
+
+        eventValidator.validateEventSlug(eventSlug);
+
+        ObjectListing directoryImages = amazonS3Service.getDirectoryContent((EVENT_IMAGE_PATH + eventSlug + "/"), null);
+        for (S3ObjectSummary summary: directoryImages.getObjectSummaries()) {
+            amazonS3Service.delete(summary.getKey());
+        }
+
+        eventRepository.deleteBySlug(eventSlug);
+
+        logger.info("***** SUCCESSFULLY DELETED EVENT WITH SLUG = {} *****", eventSlug);
+    }
 
     private String createEventSlug(String eventName) {
         Slugify slug = new Slugify();

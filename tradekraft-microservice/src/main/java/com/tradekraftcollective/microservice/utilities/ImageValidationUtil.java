@@ -23,7 +23,7 @@ import java.util.Map;
 public class ImageValidationUtil {
     private final Logger logger = LoggerFactory.getLogger(ImageValidationUtil.class);
 
-    public final Map<String, String> imageExtensionWhitelist;
+    private final Map<String, String> imageExtensionWhitelist;
 
     public ImageValidationUtil() {
         imageExtensionWhitelist = new HashMap<>();

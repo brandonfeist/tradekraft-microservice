@@ -1,7 +1,12 @@
 package com.tradekraftcollective.microservice.persistence.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.google.gson.JsonObject;
 import com.tradekraftcollective.microservice.strategy.ImageSize;
+import lombok.AccessLevel;
 import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
 import javax.persistence.*;
 import java.util.ArrayList;
@@ -17,12 +22,19 @@ import java.util.List;
 public class Event {
 
     public static final String EVENT_IMAGE_UPLOAD_PATH = "uploads/event/image/";
+
     public List<ImageSize> getImageSizes() {
         List<ImageSize> imageSizes = new ArrayList<>();
         imageSizes.add(new ImageSize("original", 500, null));
 
         return imageSizes;
     }
+
+    @Transient
+    @JsonIgnore
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
+    private static final String EVENT_AWS_URL = "https://s3.amazonaws.com/tradekraft-assets/uploads/event/image/";
 
     @Id
     @Column(name = "id", nullable = false)
@@ -85,6 +97,27 @@ public class Event {
 
     @Column(name = "updated_at", nullable = false)
     private Date updatedAt;
+
+    @JsonIgnore
+    public String getImageName() {
+        return image;
+    }
+
+    public String getImage() {
+        JsonObject jsonObject = new JsonObject();
+
+        for (ImageSize imageSize : getImageSizes()) {
+            if (imageSize.getSizeName().equals("original")) {
+                jsonObject.addProperty(imageSize.getSizeName(),
+                        (EVENT_AWS_URL + slug + "/" + image));
+            } else {
+                jsonObject.addProperty(imageSize.getSizeName(),
+                        (EVENT_AWS_URL + slug + "/" + imageSize.getSizeName() + "_" + image));
+            }
+        }
+
+        return jsonObject.toString();
+    }
 
     @PrePersist
     protected void onCreate() {
