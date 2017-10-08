@@ -10,6 +10,7 @@ import com.tradekraftcollective.microservice.persistence.entity.Event;
 import com.tradekraftcollective.microservice.service.IEventPatchService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
 import java.util.List;
@@ -18,6 +19,7 @@ import java.util.Map;
 /**
  * Created by brandonfeist on 10/8/17.
  */
+@Service
 public class EventPatchService implements IEventPatchService {
     private final Logger logger = LoggerFactory.getLogger(EventPatchService.class);
 

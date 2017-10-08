@@ -8,9 +8,12 @@ import com.github.slugify.Slugify;
 import com.tradekraftcollective.microservice.constants.PatchOperationConstants;
 import com.tradekraftcollective.microservice.exception.ErrorCode;
 import com.tradekraftcollective.microservice.exception.ServiceException;
+import com.tradekraftcollective.microservice.persistence.entity.Artist;
 import com.tradekraftcollective.microservice.persistence.entity.Event;
+import com.tradekraftcollective.microservice.repository.IArtistRepository;
 import com.tradekraftcollective.microservice.repository.IEventRepository;
 import com.tradekraftcollective.microservice.service.AmazonS3Service;
+import com.tradekraftcollective.microservice.service.IArtistPatchService;
 import com.tradekraftcollective.microservice.service.IEventManagementService;
 import com.tradekraftcollective.microservice.utilities.ImageProcessingUtil;
 import com.tradekraftcollective.microservice.validator.EventValidator;
@@ -26,6 +29,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.inject.Inject;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -48,6 +53,9 @@ public class EventManagementService implements IEventManagementService {
     EventPatchService eventPatchService;
 
     @Inject
+    IArtistRepository artistRepository;
+
+    @Inject
     ImageProcessingUtil imageProcessingUtil;
 
     @Inject
@@ -67,7 +75,19 @@ public class EventManagementService implements IEventManagementService {
         return eventRepository.findAll(request);
     }
 
-    // Get event
+    @Override
+    public Event getEvent(String eventSlug) {
+        if(eventSlug == null) {
+            logger.error("Event slug cannot be null");
+            throw new ServiceException(ErrorCode.INVALID_EVENT_SLUG, "event slug cannot be null.");
+        }
+
+        eventSlug = eventSlug.toLowerCase();
+
+        Event event = eventRepository.findBySlug(eventSlug);
+
+        return event;
+    }
 
     @Override
     public Event createEvent(Event event, MultipartFile imageFile, StopWatch stopWatch) {
@@ -78,6 +98,8 @@ public class EventManagementService implements IEventManagementService {
         stopWatch.stop();
 
         stopWatch.start("saveEvent");
+
+        event.setArtists(findAndSetEventArtists(event));
 
         event.setSlug(createEventSlug(event.getName()));
 
@@ -192,5 +214,21 @@ public class EventManagementService implements IEventManagementService {
 
         int duplicateSlugs = eventRepository.findBySlugStartingWith(result).size();
         return duplicateSlugs > 0 ? result.concat("-" + (duplicateSlugs + 1)) : result;
+    }
+
+    private Collection<Artist> findAndSetEventArtists(Event event) {
+        Collection<Artist> eventArtists = new ArrayList<>();
+
+        for(Artist artist : event.getArtists()) {
+            Artist checkedArtist = artistRepository.findBySlug(artist.getSlug());
+            if(checkedArtist == null) {
+                logger.error("Event artist with slug [{}] does not exist.", artist.getSlug());
+                throw new ServiceException(ErrorCode.INVALID_ARTIST_SLUG, "artist with slug [" + artist.getSlug() + "] does not exist.");
+            }
+
+            eventArtists.add(checkedArtist);
+        }
+
+        return eventArtists;
     }
 }

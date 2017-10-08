@@ -1,6 +1,7 @@
 package com.tradekraftcollective.microservice.persistence.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.google.gson.JsonObject;
 import com.tradekraftcollective.microservice.strategy.ImageSize;
 import lombok.AccessLevel;
@@ -10,6 +11,7 @@ import lombok.Setter;
 
 import javax.persistence.*;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 
@@ -76,6 +78,10 @@ public class Artist {
 
     @Column(name = "updated_at", nullable = false)
     private Date updatedAt;
+
+    @ManyToMany(mappedBy="artists")
+    @JsonIgnoreProperties("artists")
+    private Collection<Event> events;
 
     @JsonIgnore
     public String getImageName() {

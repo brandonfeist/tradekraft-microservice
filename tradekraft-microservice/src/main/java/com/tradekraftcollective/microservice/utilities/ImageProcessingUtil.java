@@ -39,6 +39,7 @@ public class ImageProcessingUtil {
 
                     tmpFile.createNewFile();
 
+                    resizeToLimit(imageSize.getWidth(), imageSize.getHeight(), imageQuality, imageFile, tmpFile);
                     amazonS3Service.upload(resizeToLimit(imageSize.getWidth(), imageSize.getHeight(), imageQuality, imageFile, tmpFile),
                             uploadPath, fileName);
 
@@ -71,9 +72,17 @@ public class ImageProcessingUtil {
      * @param width int imageWidth limit
      * @param height int imageHeight limit
      */
-    public File resizeToLimit(int width, int height, double quality, MultipartFile multipartFile, File newFile) {
+    public File resizeToLimit(Integer width, Integer height, double quality, MultipartFile multipartFile, File newFile) {
         try {
             BufferedImage image = ImageIO.read(multipartFile.getInputStream());
+
+            if(width == null) {
+                width = image.getWidth();
+            }
+
+            if(height == null) {
+                height = image.getHeight();
+            }
 
             Thumbnails.of(image)
                     .size(width, height)

@@ -1,6 +1,7 @@
 package com.tradekraftcollective.microservice.persistence.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.google.gson.JsonObject;
 import com.tradekraftcollective.microservice.strategy.ImageSize;
 import lombok.AccessLevel;
@@ -10,6 +11,7 @@ import lombok.Setter;
 
 import javax.persistence.*;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 
@@ -97,6 +99,16 @@ public class Event {
 
     @Column(name = "updated_at", nullable = false)
     private Date updatedAt;
+
+    @ManyToMany(cascade = {
+            CascadeType.PERSIST,
+            CascadeType.MERGE
+    })
+    @JoinTable(name = "artist_events",
+        joinColumns = @JoinColumn(name = "event_id", referencedColumnName = "id"),
+        inverseJoinColumns = @JoinColumn(name = "artist_id", referencedColumnName = "id"))
+    @JsonIgnoreProperties("events")
+    private Collection<Artist> artists;
 
     @JsonIgnore
     public String getImageName() {

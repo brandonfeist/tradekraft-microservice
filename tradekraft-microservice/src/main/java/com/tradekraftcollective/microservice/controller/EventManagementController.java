@@ -1,5 +1,6 @@
 package com.tradekraftcollective.microservice.controller;
 
+import com.github.fge.jsonpatch.JsonPatchOperation;
 import com.tradekraftcollective.microservice.persistence.entity.Event;
 import com.tradekraftcollective.microservice.service.IEventManagementService;
 import org.slf4j.Logger;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.inject.Inject;
+import java.util.List;
 
 /**
  * Created by brandonfeist on 9/28/17.
@@ -52,9 +54,9 @@ public class EventManagementController {
     ) {
         logger.info("getEvent [{}]", xRequestId);
 
-//        Event event = eventManagementService.getArtist(eventSlug);
+        Event event = eventManagementService.getEvent(eventSlug);
 
-        return new ResponseEntity<>(null, HttpStatus.OK);
+        return new ResponseEntity<>(event, HttpStatus.OK);
     }
 
     @RequestMapping(method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -65,10 +67,38 @@ public class EventManagementController {
     ) {
         logger.info("createEvent [{}] {}", xRequestId, inputEvent);
 
-        StopWatch stopWatch = new StopWatch("createArtist");
+        StopWatch stopWatch = new StopWatch("createEvent");
 
         Event event = eventManagementService.createEvent(inputEvent, imageFile, stopWatch);
 
         return new ResponseEntity<>(event, HttpStatus.CREATED);
+    }
+
+    @RequestMapping(value = "/{slug}", method = RequestMethod.PATCH, produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> patchEvent(
+            @PathVariable("slug") String eventSlug,
+            @RequestPart("patch") List<JsonPatchOperation> patches,
+            @RequestPart(value = "image", required = false) MultipartFile imageFile,
+            @RequestHeader(value = "X-Request-ID", required = false) String xRequestId
+    ) {
+        logger.info("patchArtist [{}] {}", xRequestId, eventSlug);
+
+        StopWatch stopWatch = new StopWatch("patchEvent");
+
+        final Event event = eventManagementService.patchEvent(patches, imageFile, eventSlug, stopWatch);
+
+        return new ResponseEntity<>(event, HttpStatus.OK);
+    }
+
+    @RequestMapping(value = "/{slug}", method = RequestMethod.DELETE)
+    public ResponseEntity<?> deleteEvent(
+            @PathVariable("slug") String eventSlug,
+            @RequestHeader(value = "X-Request-ID", required = false) String xRequestId
+    ) {
+        logger.info("deleteArtist [{}] {}", xRequestId, eventSlug);
+
+        eventManagementService.deleteEvent(eventSlug);
+
+        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 }

@@ -14,6 +14,8 @@ import java.util.List;
 public interface IEventManagementService {
     Page<Event> getEvents(int page, int pageSize, String sortField, String sortOrder);
 
+    Event getEvent(String eventSlug);
+
     Event createEvent(Event event, MultipartFile imageFile, StopWatch stopWatch);
 
     Event patchEvent(final List<JsonPatchOperation> patchOperations, final MultipartFile imageFile, final String artistSlug, StopWatch stopWatch);
