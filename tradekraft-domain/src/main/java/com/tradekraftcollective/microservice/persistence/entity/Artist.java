@@ -2,7 +2,8 @@ package com.tradekraftcollective.microservice.persistence.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.google.gson.JsonObject;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.tradekraftcollective.microservice.strategy.ImageSize;
 import lombok.AccessLevel;
 import lombok.Data;
@@ -88,20 +89,21 @@ public class Artist {
         return image;
     }
 
-    public String getImage() {
-        JsonObject jsonObject = new JsonObject();
+    public ObjectNode getImage() {
+        ObjectMapper objectMapper = new ObjectMapper();
+        ObjectNode objectNode = objectMapper.createObjectNode();
 
         for (ImageSize imageSize : getImageSizes()) {
             if (imageSize.getSizeName().equals("original")) {
-                jsonObject.addProperty(imageSize.getSizeName(),
+                objectNode.put(imageSize.getSizeName(),
                         (ARTIST_AWS_URL + slug + "/" + image));
             } else {
-                jsonObject.addProperty(imageSize.getSizeName(),
+                objectNode.put(imageSize.getSizeName(),
                         (ARTIST_AWS_URL + slug + "/" + imageSize.getSizeName() + "_" + image));
             }
         }
 
-        return jsonObject.toString();
+        return objectNode;
     }
 
     @PrePersist

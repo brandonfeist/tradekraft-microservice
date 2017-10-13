@@ -125,7 +125,7 @@ public class EventValidator {
     private void validateEventImage(MultipartFile image) {
         try {
             imageValidationUtil.validateImageExtension(image);
-            imageValidationUtil.minimumImageSize(450, 400, ImageIO.read(image.getInputStream()));
+            imageValidationUtil.minimumImageSize(1000, 592, ImageIO.read(image.getInputStream()));
         } catch(IOException e) {
             e.printStackTrace();
         }
