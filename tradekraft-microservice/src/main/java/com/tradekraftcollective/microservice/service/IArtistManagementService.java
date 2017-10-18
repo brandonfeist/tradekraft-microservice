@@ -13,7 +13,7 @@ import java.util.List;
  * Created by brandonfeist on 9/5/17.
  */
 public interface IArtistManagementService {
-    Page<Artist> getArtists(int page, int pageSize, String sortField, String sortOrder);
+    Page<Artist> getArtists(int page, int pageSize, String sortField, String sortOrder, String artistQuery, String yearQuery);
 
     Artist getArtist(String artistSlug);
 

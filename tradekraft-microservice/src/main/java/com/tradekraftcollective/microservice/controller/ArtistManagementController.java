@@ -38,6 +38,8 @@ public class ArtistManagementController {
 
     @RequestMapping(method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> getArtists(
+            @RequestParam(value = "artistQuery", required = false) String artistQuery,
+            @RequestParam(value = "yearQuery", required = false) String yearQuery,
             @RequestParam(value = "page", defaultValue = DEFAULT_PAGE_NUM, required = false) Integer page,
             @RequestParam(value = "pageSize", defaultValue = DEFAULT_PAGE_SIZE, required = false) Integer pageSize,
             @RequestParam(value = "sortField", defaultValue = SORT_FIELD_NAME, required = false) String sortField,
@@ -46,7 +48,7 @@ public class ArtistManagementController {
     ) {
         logger.info("getArtists [{}]", xRequestId);
 
-        Page<Artist> artists = artistManagementService.getArtists(page, pageSize, sortField, sortOrder);
+        Page<Artist> artists = artistManagementService.getArtists(page, pageSize, sortField, sortOrder, artistQuery, yearQuery);
 
         return new ResponseEntity<>(artists, HttpStatus.OK);
     }

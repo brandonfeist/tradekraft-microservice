@@ -16,9 +16,7 @@ import com.tradekraftcollective.microservice.utilities.ImageProcessingUtil;
 import com.tradekraftcollective.microservice.validator.ArtistValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StopWatch;
@@ -54,7 +52,7 @@ public class ArtistManagementService implements IArtistManagementService {
     AmazonS3Service amazonS3Service;
 
     @Override
-    public Page<Artist> getArtists(int page, int pageSize, String sortField, String sortOrder) {
+    public Page<Artist> getArtists(int page, int pageSize, String sortField, String sortOrder, String artistQuery, String yearQuery) {
         logger.info("Fetching artists, page: {} pageSize {} sortField {} sortOrder {}", page, pageSize, sortField, sortOrder);
 
         Sort.Direction order = Sort.Direction.ASC;
@@ -63,6 +61,21 @@ public class ArtistManagementService implements IArtistManagementService {
         }
 
         PageRequest request = new PageRequest(page, pageSize, order, sortField);
+
+        // Validate if year exists so odd numbers aren't passed in, also validate if integer
+        if(artistQuery != null) {
+            Artist dummyArtist = new Artist();
+            dummyArtist.setName(artistQuery);
+
+            ExampleMatcher matcher = ExampleMatcher.matching()
+                    .withMatcher("name",  match -> match.contains().ignoreCase())
+                    .withIgnoreNullValues()
+                    .withIgnorePaths("id", "description", "image", "soundcloud", "facebook", "twitter", "instagram", "spotify", "slug", "createdAt", "updatedAt", "events");
+
+            Example<Artist> exampleArtist = Example.of(dummyArtist, matcher);
+
+            return  artistRepository.findAll(exampleArtist, request);
+        }
 
         return artistRepository.findAll(request);
     }
