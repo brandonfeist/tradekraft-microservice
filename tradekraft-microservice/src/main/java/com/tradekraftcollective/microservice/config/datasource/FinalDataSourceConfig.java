@@ -35,7 +35,7 @@ public class FinalDataSourceConfig {
         String dbHost = (hostname == null || "null".equals(hostname)) ? host : hostname;
         this.dataSourceUrl = String.format("jdbc:postgresql://%s:%s/%s?ApplicationName=%s", dbHost, port, dbName, "public");
 
-        logger.info("Connecting to jdbc %s", this.dataSourceUrl);
+        logger.info("Connecting to jdbc {}", this.dataSourceUrl);
         this.dataSourceUsername = dataSourceUsername;
         this.dataSourcePassword = dataSourcePassword;
         this.dataConnectionParams = dataConnectionParams;

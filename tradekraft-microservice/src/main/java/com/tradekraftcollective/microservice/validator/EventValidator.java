@@ -77,7 +77,7 @@ public class EventValidator {
 
         if(!validEventAge) {
             logger.error("Invalid event entry age. Valid ages are [all, 16+, 18+, 21+]");
-            throw new ServiceException(ErrorCode.INVALID_EVENT_ENTRY_AGE, "event start date must be present.");
+            throw new ServiceException(ErrorCode.INVALID_EVENT_ENTRY_AGE, "valid event ages are [all, 16+, 18+, 21+].");
         }
     }
 

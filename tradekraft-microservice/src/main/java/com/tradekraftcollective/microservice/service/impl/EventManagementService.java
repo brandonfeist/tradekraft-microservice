@@ -29,9 +29,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.inject.Inject;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
 
 /**
  * Created by brandonfeist on 9/28/17.
@@ -63,7 +61,7 @@ public class EventManagementService implements IEventManagementService {
 
     @Override
     public Page<Event> getEvents(int page, int pageSize, String sortField, String sortOrder) {
-        logger.info("Fetching events, page: {} pageSize {} sortField {} sortOrder {}", page, pageSize, sortField, sortOrder);
+        logger.info("Fetching events, page: {} pageSize: {} sortField: {} sortOrder: {}", page, pageSize, sortField, sortOrder);
 
         Sort.Direction order = Sort.Direction.ASC;
         if(sortOrder != null && sortOrder.equalsIgnoreCase(DESCENDING)) {
@@ -216,8 +214,8 @@ public class EventManagementService implements IEventManagementService {
         return duplicateSlugs > 0 ? result.concat("-" + (duplicateSlugs + 1)) : result;
     }
 
-    private Collection<Artist> findAndSetEventArtists(Event event) {
-        Collection<Artist> eventArtists = new ArrayList<>();
+    private Set<Artist> findAndSetEventArtists(Event event) {
+        Set<Artist> eventArtists = new HashSet<>();
 
         for(Artist artist : event.getArtists()) {
             Artist checkedArtist = artistRepository.findBySlug(artist.getSlug());

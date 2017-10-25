@@ -53,7 +53,7 @@ public class ArtistManagementService implements IArtistManagementService {
 
     @Override
     public Page<Artist> getArtists(int page, int pageSize, String sortField, String sortOrder, String artistQuery, String yearQuery) {
-        logger.info("Fetching artists, page: {} pageSize {} sortField {} sortOrder {}", page, pageSize, sortField, sortOrder);
+        logger.info("Fetching artists, page: {} pageSize: {} sortField: {} sortOrder: {}", page, pageSize, sortField, sortOrder);
 
         Sort.Direction order = Sort.Direction.ASC;
         if(sortOrder != null && sortOrder.equalsIgnoreCase(DESCENDING)) {
@@ -113,6 +113,7 @@ public class ArtistManagementService implements IArtistManagementService {
         Artist returnArtist = artistRepository.save(artist);
 
         stopWatch.stop();
+
         logger.info("***** SUCCESSFULLY CREATED ARTIST WITH SLUG = {} *****", returnArtist.getSlug());
 
         return returnArtist;

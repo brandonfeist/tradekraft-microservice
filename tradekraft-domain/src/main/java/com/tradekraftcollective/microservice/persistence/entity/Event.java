@@ -5,16 +5,10 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.tradekraftcollective.microservice.strategy.ImageSize;
-import lombok.AccessLevel;
-import lombok.Data;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 import javax.persistence.*;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 /**
  * Created by brandonfeist on 9/28/17.
@@ -22,6 +16,7 @@ import java.util.List;
 @Entity
 @Data
 @Table(name = "events")
+//@EqualsAndHashCode(callSuper = false, exclude={"artists"})
 public class Event {
 
     public static final String EVENT_IMAGE_UPLOAD_PATH = "uploads/event/image/";
@@ -110,7 +105,7 @@ public class Event {
         joinColumns = @JoinColumn(name = "event_id", referencedColumnName = "id"),
         inverseJoinColumns = @JoinColumn(name = "artist_id", referencedColumnName = "id"))
     @JsonIgnoreProperties("events")
-    private Collection<Artist> artists;
+    private Set<Artist> artists;
 
     @JsonIgnore
     public String getImageName() {

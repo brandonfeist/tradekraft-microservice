@@ -26,6 +26,14 @@ public enum ErrorCode {
     INVALID_EVENT_ADDRESS(HttpStatus.BAD_REQUEST.value(), "Invalid event address"),
     INVALID_EVENT_ENTRY_AGE(HttpStatus.BAD_REQUEST.value(), "Invalid event entry age"),
 
+    INVALID_RELEASE_NAME(HttpStatus.BAD_REQUEST.value(), "Invalid release name"),
+    INVALID_RELEASE_TYPE(HttpStatus.BAD_REQUEST.value(), "Invalid release type"),
+
+    INVALID_SONG_NAME(HttpStatus.BAD_REQUEST.value(), "Invalid song name"),
+    INVALID_SONG_TRACK_NUMBER(HttpStatus.BAD_REQUEST.value(), "Invalid song track number"),
+    INVALID_SONG_COUNT(HttpStatus.BAD_REQUEST.value(), "Invalid song count"),
+    INVALID_SONG_FILE(HttpStatus.BAD_REQUEST.value(), "Invalid song file"),
+
     INVALID_IMAGE_DEMINSIONS(HttpStatus.BAD_REQUEST.value(), "Invalid image dimensions"),
     INVALID_IMAGE_EXTENSION(HttpStatus.BAD_REQUEST.value(), "Invalid image extension"),
 
