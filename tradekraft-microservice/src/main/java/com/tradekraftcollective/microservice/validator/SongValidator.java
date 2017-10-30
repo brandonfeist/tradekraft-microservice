@@ -36,7 +36,7 @@ public class SongValidator {
         }
 
         for(Song song : songs) {
-            validateSong(song, songFileHashMap.get(song.getSongFile()));
+            validateSong(song, songFileHashMap.get(song.getSongFileName()));
         }
 
         validateSongTrackNumbers(songs);

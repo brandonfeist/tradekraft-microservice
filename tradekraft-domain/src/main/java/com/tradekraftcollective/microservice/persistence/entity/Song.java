@@ -82,7 +82,7 @@ public class Song {
     private Date updatedAt;
 
     @JsonIgnore
-    public String getSongName() {
+    public String getSongFileName() {
         return songFile;
     }
 

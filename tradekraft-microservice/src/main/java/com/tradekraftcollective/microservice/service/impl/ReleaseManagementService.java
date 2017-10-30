@@ -97,7 +97,7 @@ public class ReleaseManagementService implements IReleaseManagementService {
         Set<Song> finalSongSet = new HashSet<>();
         HashMap<String, MultipartFile> songFileHashMap = songManagementService.createSongFileHashMap(songFiles);
         for(Song song : release.getSongs()) {
-            finalSongSet.add(songManagementService.createSong(release, song, songFileHashMap.get(song.getSongFile())));
+            finalSongSet.add(songManagementService.createSong(release, song, songFileHashMap.get(song.getSongFileName())));
         }
 
         release.setSongs(finalSongSet);
