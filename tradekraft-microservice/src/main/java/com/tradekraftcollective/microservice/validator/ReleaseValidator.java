@@ -3,6 +3,7 @@ package com.tradekraftcollective.microservice.validator;
 import com.tradekraftcollective.microservice.exception.ErrorCode;
 import com.tradekraftcollective.microservice.exception.ServiceException;
 import com.tradekraftcollective.microservice.persistence.entity.Release;
+import com.tradekraftcollective.microservice.repository.IReleaseRepository;
 import com.tradekraftcollective.microservice.utilities.ImageValidationUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,6 +22,9 @@ public class ReleaseValidator {
     private static Logger logger = LoggerFactory.getLogger(ReleaseValidator.class);
 
     @Inject
+    private IReleaseRepository releaseRepository;
+
+    @Inject
     private SongValidator songValidator;
 
     @Inject
@@ -36,6 +40,13 @@ public class ReleaseValidator {
         validateReleaseLinks(release);
         validateReleaseImage(image);
         songValidator.validateReleaseSongs(release.getSongs(), songFiles);
+    }
+
+    public void validateReleaseSlug(String releaseSlug) {
+        if(releaseRepository.findBySlug(releaseSlug) == null) {
+            logger.error("Release with slug [{}] does not exist", releaseSlug);
+            throw new ServiceException(ErrorCode.INVALID_RELEASE_SLUG, "Release with slug [" + releaseSlug + "] does not exist");
+        }
     }
 
     private void validateReleaseName(Release release) {

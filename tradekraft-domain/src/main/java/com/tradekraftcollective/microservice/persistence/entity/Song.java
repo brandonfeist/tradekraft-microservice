@@ -2,9 +2,11 @@ package com.tradekraftcollective.microservice.persistence.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.tradekraftcollective.microservice.strategy.AudioFormat;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
+import com.tradekraftcollective.microservice.strategy.ImageSize;
+import lombok.*;
 
 import javax.persistence.*;
 import java.util.*;
@@ -15,7 +17,7 @@ import java.util.*;
 @Entity
 @Data
 @Table(name = "songs")
-//@EqualsAndHashCode(callSuper = false, exclude={"artists"})
+@EqualsAndHashCode(callSuper = false, exclude={"artists", "release"})
 public class Song {
 
     public static final String SONG_AUDIO_UPLOAD_PATH = "uploads/song/release-song/";
@@ -24,10 +26,17 @@ public class Song {
     public List<AudioFormat> getAudioFormats() {
         List<AudioFormat> audioFormats = new ArrayList<>();
         audioFormats.add(new AudioFormat("96k","libvorbis", "2", "96k", "ogg", "ogg"));
-        audioFormats.add(new AudioFormat("original","aac", "2", "128k", "adts", "m4a"));
+        audioFormats.add(new AudioFormat("128k","aac", "2", "128k", "adts", "m4a"));
+//        audioFormats.add(new AudioFormat("original","libmp3lame", "2", "192k", "mp3", "mp3"));
 
         return  audioFormats;
     }
+
+    @Transient
+    @JsonIgnore
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
+    private static final String SONG_AWS_URL = "https://s3.amazonaws.com/tradekraft-assets/uploads/song/release-song/";
 
     @Id
     @Column(name = "id", nullable = false)
@@ -49,7 +58,7 @@ public class Song {
     @Column(name = "bpm")
     private Integer bpm;
 
-    @ManyToOne
+    @ManyToOne(fetch=FetchType.LAZY)
     @JoinColumn(name = "release_id")
     private Release release;
 
@@ -71,6 +80,28 @@ public class Song {
 
     @Column(name = "updated_at", nullable = false)
     private Date updatedAt;
+
+    @JsonIgnore
+    public String getSongName() {
+        return songFile;
+    }
+
+    public ObjectNode getSongFile() {
+        ObjectMapper objectMapper = new ObjectMapper();
+        ObjectNode objectNode = objectMapper.createObjectNode();
+
+        for (AudioFormat audioFormat : getAudioFormats()) {
+            if (audioFormat.getFileName().equals("original")) {
+                objectNode.put(audioFormat.getExtension(),
+                        (SONG_AWS_URL + slug + "/" + songFile + "." + audioFormat.getExtension()));
+            } else {
+                objectNode.put(audioFormat.getExtension(),
+                        (SONG_AWS_URL + slug + "/" + audioFormat.getFileName() + "_" + songFile + "." + audioFormat.getExtension()));
+            }
+        }
+
+        return objectNode;
+    }
 
     @PrePersist
     protected void onCreate() {

@@ -28,6 +28,7 @@ public enum ErrorCode {
 
     INVALID_RELEASE_NAME(HttpStatus.BAD_REQUEST.value(), "Invalid release name"),
     INVALID_RELEASE_TYPE(HttpStatus.BAD_REQUEST.value(), "Invalid release type"),
+    INVALID_RELEASE_SLUG(HttpStatus.BAD_REQUEST.value(), "Invalid release slug"),
 
     INVALID_SONG_NAME(HttpStatus.BAD_REQUEST.value(), "Invalid song name"),
     INVALID_SONG_TRACK_NUMBER(HttpStatus.BAD_REQUEST.value(), "Invalid song track number"),

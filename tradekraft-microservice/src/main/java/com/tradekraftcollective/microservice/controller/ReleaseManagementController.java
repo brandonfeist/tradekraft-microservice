@@ -6,6 +6,7 @@ import com.tradekraftcollective.microservice.persistence.entity.Song;
 import com.tradekraftcollective.microservice.service.IReleaseManagementService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -41,9 +42,9 @@ public class ReleaseManagementController {
     ) {
         logger.info("getReleases [{}]", xRequestId);
 
-//        Page<Artist> artists = artistManagementService.getArtists(page, pageSize, sortField, sortOrder, artistQuery, yearQuery);
+        Page<Release> releases = releaseManagementService.getReleases(page, pageSize, sortField, sortOrder);
 
-        return new ResponseEntity<>(null, HttpStatus.OK);
+        return new ResponseEntity<>(releases, HttpStatus.OK);
     }
 
     @RequestMapping(value = "/{slug}", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
@@ -53,9 +54,9 @@ public class ReleaseManagementController {
     ) {
         logger.info("getRelease [{}]", xRequestId);
 
-//        Artist artist = artistManagementService.getArtist(artistSlug);
+        Release release = releaseManagementService.getRelease(releaseSlug);
 
-        return new ResponseEntity<>(null, HttpStatus.OK);
+        return new ResponseEntity<>(release, HttpStatus.OK);
     }
 
     @RequestMapping(method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -72,5 +73,17 @@ public class ReleaseManagementController {
         Release release = releaseManagementService.createRelease(inputRelease, imageFile, songFiles, stopWatch);
 
         return new ResponseEntity<>(release, HttpStatus.CREATED);
+    }
+
+    @RequestMapping(value = "/{slug}", method = RequestMethod.DELETE)
+    public ResponseEntity<?> deleteRelease(
+            @PathVariable("slug") String releaseSlug,
+            @RequestHeader(value = "X-Request-ID", required = false) String xRequestId
+    ) {
+        logger.info("deleteRelease [{}] {}", xRequestId, releaseSlug);
+
+        releaseManagementService.deleteRelease(releaseSlug);
+
+        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 }

@@ -1,9 +1,13 @@
 package com.tradekraftcollective.microservice.utilities;
 
+import com.tradekraftcollective.microservice.persistence.entity.Artist;
+import com.tradekraftcollective.microservice.persistence.entity.Release;
 import com.tradekraftcollective.microservice.persistence.entity.Song;
 import com.tradekraftcollective.microservice.service.AmazonS3Service;
+import com.tradekraftcollective.microservice.strategies.MetaData;
 import com.tradekraftcollective.microservice.strategy.AudioFormat;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang3.ArrayUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -11,6 +15,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.inject.Inject;
 import java.io.*;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -27,16 +32,18 @@ public class AudioProcessingUtil {
     @Inject
     AmazonS3Service amazonS3Service;
 
-    public String processAudioAndUpload(List<AudioFormat> audioFormats, Song song, String uploadPath, MultipartFile audioFile) {
+    public String processAudioAndUpload(List<AudioFormat> audioFormats, Release release, Song song, String uploadPath, MultipartFile audioFile) {
         String originalFileName = audioFile.getOriginalFilename();
         String fileNameNoExtension = FilenameUtils.getBaseName(originalFileName);
+
+        List<MetaData> metaDataList = retrieveMetaDataList(release, song);
 
         try {
             for(AudioFormat audioFormat : audioFormats) {
                 if(audioFormat.getFileName().equals("original")) {
                     logger.debug("Uploading original audio file [{}]", originalFileName);
 
-                    File tmpFile = convertAudio(song, fileNameNoExtension, audioFile, audioFormat);
+                    File tmpFile = convertAudio(song, fileNameNoExtension, audioFile, audioFormat, metaDataList);
 
                     amazonS3Service.upload(tmpFile, uploadPath, tmpFile.getName());
 
@@ -45,7 +52,7 @@ public class AudioProcessingUtil {
                     logger.debug("Uploading {} audio file [{}]", audioFormat.getFileName(), originalFileName);
 
                     String updatedFileNameNoExtension = audioFormat.getFileName() + "_" + fileNameNoExtension;
-                    File tmpFile = convertAudio(song, updatedFileNameNoExtension, audioFile, audioFormat);
+                    File tmpFile = convertAudio(song, updatedFileNameNoExtension, audioFile, audioFormat, metaDataList);
 
                     amazonS3Service.upload(tmpFile, uploadPath, tmpFile.getName());
 
@@ -59,7 +66,7 @@ public class AudioProcessingUtil {
         return fileNameNoExtension;
     }
 
-    private File convertAudio(Song song, String fileName, MultipartFile inputAudioFile, AudioFormat audioFormat) throws IOException {
+    private File convertAudio(Song song, String fileName, MultipartFile inputAudioFile, AudioFormat audioFormat, List<MetaData> metaDataList) throws IOException {
         String duration;
         String originalFileName = inputAudioFile.getOriginalFilename();
 
@@ -67,24 +74,16 @@ public class AudioProcessingUtil {
 
         File outputFile =  new File(fileName + "." + audioFormat.getExtension());
 
-        /*
         // Make a check to make sure extension and audio format are the same and are also valid.
-//        if(FilenameUtils.getExtension(fileName) != audioFormat)
-        if(audioFormat.equals("ogg")) {
-//            outputFile = new File(FilenameUtils.getBaseName(originalFileName) + ".ogg");
-        } else if(audioFormat.equals("adts")) {
-//            outputFile = new File(FilenameUtils.getBaseName(originalFileName) + ".m4a");
-        } else {
-//            return outputFile;
-        }*/
 
         logger.info("Converting audio file {} to {}", tmpAudioFile.getName(), outputFile.getName());
-        Process p = Runtime.getRuntime().exec("ffmpeg " +
-                "-i " + tmpAudioFile.getAbsolutePath() + " " +
-                "-c:a " + audioFormat.getCodec() + " -y " +
-                "-ac " + audioFormat.getChannels() + " " +
-                "-b:a " + audioFormat.getBitRate() + " -f " + audioFormat.getFormat() + " " +
-                outputFile.getAbsolutePath());
+        String[] ffmpegCommand = {"ffmpeg", "-i", tmpAudioFile.getAbsolutePath(), "-c:a", audioFormat.getCodec(),
+            "-ac", audioFormat.getChannels(), "-b:a", audioFormat.getBitRate()};
+        String[] metaDataCommand = createMetaDataString(metaDataList);
+        String[] outputCommand = {"-y", "-f", audioFormat.getFormat(), outputFile.getAbsolutePath()};
+        String[] command = ArrayUtils.addAll(ArrayUtils.addAll(ffmpegCommand, metaDataCommand), outputCommand);
+
+        Process p = Runtime.getRuntime().exec(command);
 
         String ffmpegOutput;
         BufferedReader stdError = new BufferedReader(new InputStreamReader(p.getErrorStream()));
@@ -124,5 +123,46 @@ public class AudioProcessingUtil {
         fos.close();
 
         return tmpAudioFile;
+    }
+
+    private List<MetaData> retrieveMetaDataList(Release release, Song song) {
+        List<MetaData> returnMetaDataList = new ArrayList<>();
+
+        returnMetaDataList.add(new MetaData("title", song.getName()));
+        returnMetaDataList.add(new MetaData("album", release.getName()));
+        returnMetaDataList.add(new MetaData("genre", song.getGenre().getName()));
+        returnMetaDataList.add(new MetaData("publisher", "TradeKraft"));
+        returnMetaDataList.add(new MetaData("track", song.getTrackNumber().toString()));
+        returnMetaDataList.add(new MetaData("author", getArtistMetaDataString(song)));
+        returnMetaDataList.add(new MetaData("artist", getArtistMetaDataString(song)));
+
+        return returnMetaDataList;
+    }
+
+    private String getArtistMetaDataString(Song song) {
+        String artistString = "";
+        Object[] artists = song.getArtists().toArray();
+
+        // Need to build upon the artist string function to know when to do feat. vs. &
+        for(int artistIndex = 0; artistIndex < artists.length; artistIndex++) {
+            if(artistIndex == 0) {
+                artistString += ((Artist) artists[artistIndex]).getName();
+            } else {
+                artistString += "& " + ((Artist) artists[artistIndex]).getName();
+            }
+        }
+
+        return artistString;
+    }
+
+    private String[] createMetaDataString(List<MetaData> metaDataList) {
+        List<String> artistMetadataList = new ArrayList<>();
+
+        for(MetaData metaData : metaDataList) {
+            artistMetadataList.add("-metadata");
+            artistMetadataList.add((metaData.getKey() + "=" + metaData.getValue()));
+        }
+
+        return artistMetadataList.toArray(new String[artistMetadataList.size()]);
     }
 }

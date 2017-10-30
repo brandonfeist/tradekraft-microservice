@@ -1,11 +1,15 @@
 package com.tradekraftcollective.microservice.service.impl;
 
+import com.amazonaws.services.s3.model.ObjectListing;
+import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.github.slugify.Slugify;
 import com.tradekraftcollective.microservice.persistence.entity.Artist;
+import com.tradekraftcollective.microservice.persistence.entity.Release;
 import com.tradekraftcollective.microservice.persistence.entity.Song;
 import com.tradekraftcollective.microservice.repository.IArtistRepository;
 import com.tradekraftcollective.microservice.repository.IGenreRepository;
 import com.tradekraftcollective.microservice.repository.ISongRepository;
+import com.tradekraftcollective.microservice.service.AmazonS3Service;
 import com.tradekraftcollective.microservice.service.ISongManagementService;
 import com.tradekraftcollective.microservice.utilities.AudioProcessingUtil;
 import org.slf4j.Logger;
@@ -23,6 +27,8 @@ import java.util.*;
 public class SongManagementService implements ISongManagementService {
     private static Logger logger = LoggerFactory.getLogger(SongManagementService.class);
 
+    private static final String SONG_FILE_PATH = "uploads/song/release-song/";
+
     @Inject
     ISongRepository songRepository;
 
@@ -35,7 +41,10 @@ public class SongManagementService implements ISongManagementService {
     @Inject
     AudioProcessingUtil audioProcessingUtil;
 
-    public Song createSong(Song song, MultipartFile songFile) {
+    @Inject
+    AmazonS3Service amazonS3Service;
+
+    public Song createSong(Release release, Song song, MultipartFile songFile) {
         logger.info("Processing song {}", song.getName());
 
         song.setGenre(genreRepository.findByName(song.getGenre().getName()));
@@ -46,12 +55,24 @@ public class SongManagementService implements ISongManagementService {
         }
         song.setArtists(finalArtistSet);
 
+        song.setRelease(release);
+
         song.setSlug(createSongSlug(song.getName()));
 
-        song.setSongFile(audioProcessingUtil.processAudioAndUpload(song.getAudioFormats(), song,
+        song.setSongFile(audioProcessingUtil.processAudioAndUpload(song.getAudioFormats(), release, song,
                 (song.SONG_AUDIO_UPLOAD_PATH + song.getSlug() + "/"), songFile));
 
         return song;
+    }
+
+    @Override
+    public void deleteSong(Song song) {
+        logger.info("Delete song, name: {}", song.getName());
+
+        ObjectListing directorySongs = amazonS3Service.getDirectoryContent((SONG_FILE_PATH + song.getSlug() + "/"), null);
+        for (S3ObjectSummary summary: directorySongs.getObjectSummaries()) {
+            amazonS3Service.delete(summary.getKey());
+        }
     }
 
     @Override

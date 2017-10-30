@@ -1,8 +1,14 @@
 package com.tradekraftcollective.microservice.persistence.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.tradekraftcollective.microservice.strategy.ImageSize;
+import lombok.AccessLevel;
 import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
 import javax.persistence.*;
 import java.util.ArrayList;
@@ -29,6 +35,12 @@ public class Release {
 
         return imageSizes;
     }
+
+    @Transient
+    @JsonIgnore
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
+    private static final String RELEASE_AWS_URL = "https://s3.amazonaws.com/tradekraft-assets/uploads/release/image/";
 
     @Id
     @Column(name = "id", nullable = false)
@@ -70,6 +82,7 @@ public class Release {
 
     @OneToMany(mappedBy = "release", cascade = CascadeType.ALL)
     @OrderBy("trackNumber ASC")
+    @JsonIgnoreProperties("release")
     private Set<Song> songs;
 
     @Column(name = "slug")
@@ -80,6 +93,28 @@ public class Release {
 
     @Column(name = "updated_at", nullable = false)
     private Date updatedAt;
+
+    @JsonIgnore
+    public String getImageName() {
+        return image;
+    }
+
+    public ObjectNode getImage() {
+        ObjectMapper objectMapper = new ObjectMapper();
+        ObjectNode objectNode = objectMapper.createObjectNode();
+
+        for (ImageSize imageSize : getImageSizes()) {
+            if (imageSize.getSizeName().equals("original")) {
+                objectNode.put(imageSize.getSizeName(),
+                        (RELEASE_AWS_URL + slug + "/" + image));
+            } else {
+                objectNode.put(imageSize.getSizeName(),
+                        (RELEASE_AWS_URL + slug + "/" + imageSize.getSizeName() + "_" + image));
+            }
+        }
+
+        return objectNode;
+    }
 
     @PrePersist
     protected void onCreate() {
