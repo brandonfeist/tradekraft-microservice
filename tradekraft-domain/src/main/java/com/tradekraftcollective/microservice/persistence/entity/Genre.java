@@ -1,10 +1,10 @@
 package com.tradekraftcollective.microservice.persistence.entity;
 
 import lombok.Data;
-import lombok.extern.slf4j.Slf4j;
 
 import javax.persistence.*;
 import java.util.Date;
+import java.util.Objects;
 
 @Entity
 @Data
@@ -40,5 +40,23 @@ public class Genre {
     @PreUpdate
     protected void onUpdate() {
         updatedAt = new Date();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == this) return true;
+        if (!(obj instanceof Genre)) {
+            return false;
+        }
+        Genre genre = (Genre) obj;
+        return id == genre.id &&
+                hue == genre.hue &&
+                Objects.equals(name, genre.name) &&
+                Objects.equals(color, genre.color);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, hue, name, color);
     }
 }

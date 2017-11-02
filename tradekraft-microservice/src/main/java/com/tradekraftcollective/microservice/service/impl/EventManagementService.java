@@ -214,8 +214,8 @@ public class EventManagementService implements IEventManagementService {
         return duplicateSlugs > 0 ? result.concat("-" + (duplicateSlugs + 1)) : result;
     }
 
-    private Set<Artist> findAndSetEventArtists(Event event) {
-        Set<Artist> eventArtists = new HashSet<>();
+    private List<Artist> findAndSetEventArtists(Event event) {
+        List<Artist> eventArtists = new ArrayList<>();
 
         for(Artist artist : event.getArtists()) {
             Artist checkedArtist = artistRepository.findBySlug(artist.getSlug());

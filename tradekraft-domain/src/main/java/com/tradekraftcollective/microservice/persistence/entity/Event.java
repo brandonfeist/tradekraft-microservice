@@ -5,7 +5,10 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.tradekraftcollective.microservice.strategy.ImageSize;
-import lombok.*;
+import lombok.AccessLevel;
+import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
 import javax.persistence.*;
 import java.util.*;
@@ -16,7 +19,6 @@ import java.util.*;
 @Entity
 @Data
 @Table(name = "events")
-//@EqualsAndHashCode(callSuper = false, exclude={"artists"})
 public class Event {
 
     public static final String EVENT_IMAGE_UPLOAD_PATH = "uploads/event/image/";
@@ -24,7 +26,7 @@ public class Event {
     @JsonIgnore
     public List<ImageSize> getImageSizes() {
         List<ImageSize> imageSizes = new ArrayList<>();
-        imageSizes.add(new ImageSize("original", 1000, null));
+        imageSizes.add(new ImageSize("original", 500, null));
 
         return imageSizes;
     }
@@ -97,15 +99,12 @@ public class Event {
     @Column(name = "updated_at", nullable = false)
     private Date updatedAt;
 
-    @ManyToMany(cascade = {
-            CascadeType.PERSIST,
-            CascadeType.MERGE
-    })
+    @ManyToMany
     @JoinTable(name = "artist_events",
         joinColumns = @JoinColumn(name = "event_id", referencedColumnName = "id"),
         inverseJoinColumns = @JoinColumn(name = "artist_id", referencedColumnName = "id"))
     @JsonIgnoreProperties("events")
-    private Set<Artist> artists;
+    private List<Artist> artists;
 
     @JsonIgnore
     public String getImageName() {
@@ -138,5 +137,40 @@ public class Event {
     @PreUpdate
     protected void onUpdate() {
         updatedAt = new Date();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == this) return true;
+        if (!(obj instanceof Event)) {
+            return false;
+        }
+        Event event = (Event) obj;
+        return id == event.id &&
+                officialEvent == officialEvent &&
+                Double.doubleToLongBits(latitude) == Double.doubleToLongBits(event.latitude) &&
+                Double.doubleToLongBits(longitude) == Double.doubleToLongBits(event.longitude) &&
+                Objects.equals(name, event.name) &&
+                Objects.equals(description, event.description) &&
+                Objects.equals(image, event.image) &&
+                Objects.equals(ticketLink, event.ticketLink) &&
+                Objects.equals(entryAge, event.entryAge) &&
+                Objects.equals(venueName, event.venueName) &&
+                Objects.equals(address, event.address) &&
+                Objects.equals(city, event.city) &&
+                Objects.equals(state, event.state) &&
+                Objects.equals(zip, event.zip) &&
+                Objects.equals(country, event.country) &&
+                Objects.equals(startDateTime, event.startDateTime) &&
+                Objects.equals(endDateTime, event.endDateTime) &&
+                Objects.equals(artists, event.artists) &&
+                Objects.equals(slug, event.slug);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, officialEvent, latitude, longitude, name, description, image,
+                ticketLink, entryAge, venueName, address, city, state, zip, country, startDateTime, endDateTime,
+                artists, slug);
     }
 }

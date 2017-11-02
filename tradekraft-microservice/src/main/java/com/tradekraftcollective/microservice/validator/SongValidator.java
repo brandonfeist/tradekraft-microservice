@@ -11,6 +11,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.inject.Inject;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -23,7 +24,7 @@ public class SongValidator {
     @Inject
     private IGenreRepository genreRepository;
 
-    public void validateReleaseSongs(Set<Song> songs, MultipartFile[] songFiles) {
+    public void validateReleaseSongs(List<Song> songs, MultipartFile[] songFiles) {
 
         if(songs.size() != songFiles.length) {
             logger.error("Number of songs and song files mismatch");
@@ -80,7 +81,7 @@ public class SongValidator {
 
     }
 
-    private void validateSongTrackNumbers(Set<Song> songs) {
+    private void validateSongTrackNumbers(List<Song> songs) {
         HashMap<Integer, Integer> trackNumberHash = new HashMap<>();
 
         int songCount = songs.size();

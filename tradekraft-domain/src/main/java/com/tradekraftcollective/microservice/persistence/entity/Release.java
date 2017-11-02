@@ -1,20 +1,19 @@
 package com.tradekraftcollective.microservice.persistence.entity;
 
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.tradekraftcollective.microservice.strategy.ImageSize;
-import lombok.AccessLevel;
 import lombok.Data;
-import lombok.Getter;
-import lombok.Setter;
 
 import javax.persistence.*;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.Set;
+import java.util.Objects;
 
 /**
  * Created by brandonfeist on 10/22/17.
@@ -22,9 +21,15 @@ import java.util.Set;
 @Entity
 @Data
 @Table(name = "releases")
+//@JsonIdentityInfo( scope = Release.class,
+//        generator = ObjectIdGenerators.PropertyGenerator.class,
+//        property = "id"
+//)
 public class Release {
 
     public static final String RELEASE_IMAGE_UPLOAD_PATH = "uploads/release/image/";
+
+    public static final String ARTIST_AWS_URL = "https://s3.amazonaws.com/tradekraft-assets/uploads/artist/image/";
 
     @JsonIgnore
     public List<ImageSize> getImageSizes() {
@@ -35,12 +40,6 @@ public class Release {
 
         return imageSizes;
     }
-
-    @Transient
-    @JsonIgnore
-    @Getter(AccessLevel.NONE)
-    @Setter(AccessLevel.NONE)
-    private static final String RELEASE_AWS_URL = "https://s3.amazonaws.com/tradekraft-assets/uploads/release/image/";
 
     @Id
     @Column(name = "id", nullable = false)
@@ -83,7 +82,7 @@ public class Release {
     @OneToMany(mappedBy = "release", cascade = CascadeType.ALL)
     @OrderBy("trackNumber ASC")
     @JsonIgnoreProperties("release")
-    private Set<Song> songs;
+    private List<Song> songs;
 
     @Column(name = "slug")
     private String slug;
@@ -106,10 +105,10 @@ public class Release {
         for (ImageSize imageSize : getImageSizes()) {
             if (imageSize.getSizeName().equals("original")) {
                 objectNode.put(imageSize.getSizeName(),
-                        (RELEASE_AWS_URL + slug + "/" + image));
+                        (ARTIST_AWS_URL + slug + "/" + image));
             } else {
                 objectNode.put(imageSize.getSizeName(),
-                        (RELEASE_AWS_URL + slug + "/" + imageSize.getSizeName() + "_" + image));
+                        (ARTIST_AWS_URL + slug + "/" + imageSize.getSizeName() + "_" + image));
             }
         }
 
@@ -125,5 +124,34 @@ public class Release {
     @PreUpdate
     protected void onUpdate() {
         updatedAt = new Date();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == this) return true;
+        if (!(obj instanceof Release)) {
+            return false;
+        }
+        Release release = (Release) obj;
+        return id == release.id &&
+                Objects.equals(name, release.name) &&
+                Objects.equals(description, release.description) &&
+                Objects.equals(image, release.image) &&
+                Objects.equals(releaseType, release.releaseType) &&
+                Objects.equals(releaseDate, release.releaseDate) &&
+                Objects.equals(soundcloud, release.soundcloud) &&
+                Objects.equals(spotify, release.spotify) &&
+                Objects.equals(itunes, release.itunes) &&
+                Objects.equals(appleMusic, release.appleMusic) &&
+                Objects.equals(googlePlay, release.googlePlay) &&
+                Objects.equals(amazon, release.amazon) &&
+                Objects.equals(slug, release.slug);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, name, description, image, releaseType, releaseDate,
+                soundcloud, spotify, itunes, appleMusic, googlePlay, appleMusic,
+                slug);
     }
 }

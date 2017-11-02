@@ -44,16 +44,17 @@ public class SongManagementService implements ISongManagementService {
     @Inject
     AmazonS3Service amazonS3Service;
 
+    @Override
     public Song createSong(Release release, Song song, MultipartFile songFile) {
         logger.info("Processing song {}", song.getName());
 
         song.setGenre(genreRepository.findByName(song.getGenre().getName()));
 
-        Set<Artist> finalArtistSet = new HashSet<>();
+        List<Artist> finalArtistList = new ArrayList<>();
         for(Artist artist : song.getArtists()) {
-            finalArtistSet.add(artistRepository.findBySlug(artist.getSlug()));
+            finalArtistList.add(artistRepository.findBySlug(artist.getSlug()));
         }
-        song.setArtists(finalArtistSet);
+        song.setArtists(finalArtistList);
 
         song.setRelease(release);
 

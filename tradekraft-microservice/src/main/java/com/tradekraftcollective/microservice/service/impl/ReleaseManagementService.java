@@ -17,13 +17,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StopWatch;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.inject.Inject;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Created by brandonfeist on 10/22/17.
@@ -94,7 +93,7 @@ public class ReleaseManagementService implements IReleaseManagementService {
                 (release.RELEASE_IMAGE_UPLOAD_PATH + release.getSlug() + "/"),
                 imageFile, 1.0));
 
-        Set<Song> finalSongSet = new HashSet<>();
+        List<Song> finalSongSet = new ArrayList<>();
         HashMap<String, MultipartFile> songFileHashMap = songManagementService.createSongFileHashMap(songFiles);
         for(Song song : release.getSongs()) {
             finalSongSet.add(songManagementService.createSong(release, song, songFileHashMap.get(song.getSongFileName())));

@@ -1,11 +1,9 @@
 package com.tradekraftcollective.microservice.persistence.entity;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.tradekraftcollective.microservice.strategy.AudioFormat;
-import com.tradekraftcollective.microservice.strategy.ImageSize;
 import lombok.*;
 
 import javax.persistence.*;
@@ -17,10 +15,15 @@ import java.util.*;
 @Entity
 @Data
 @Table(name = "songs")
-@EqualsAndHashCode(callSuper = false, exclude={"artists", "release"})
+//@JsonIdentityInfo( scope = Song.class,
+//        generator = ObjectIdGenerators.PropertyGenerator.class,
+//        property = "id"
+//)
 public class Song {
 
     public static final String SONG_AUDIO_UPLOAD_PATH = "uploads/song/release-song/";
+
+    public static final String SONG_AWS_URL = "https://s3.amazonaws.com/tradekraft-assets/uploads/song/release-song/";
 
     @JsonIgnore
     public List<AudioFormat> getAudioFormats() {
@@ -31,12 +34,6 @@ public class Song {
 
         return  audioFormats;
     }
-
-    @Transient
-    @JsonIgnore
-    @Getter(AccessLevel.NONE)
-    @Setter(AccessLevel.NONE)
-    private static final String SONG_AWS_URL = "https://s3.amazonaws.com/tradekraft-assets/uploads/song/release-song/";
 
     @Id
     @Column(name = "id", nullable = false)
@@ -58,15 +55,16 @@ public class Song {
     @Column(name = "bpm")
     private Integer bpm;
 
-    @ManyToOne(fetch=FetchType.LAZY)
+    @ManyToOne
     @JoinColumn(name = "release_id")
+    @JsonIgnore
     private Release release;
 
     @JoinTable(name = "artist_songs",
             joinColumns = @JoinColumn(name = "song_id", referencedColumnName = "id"),
             inverseJoinColumns = @JoinColumn(name = "artist_id", referencedColumnName = "id"))
-    @JsonIgnoreProperties("songs")
-    private Set<Artist> artists;
+    @JsonIgnoreProperties({"releases", "events", "songs"})
+    private List<Artist> artists;
 
     @ManyToOne
     @JoinColumn(name = "genre_id")
@@ -112,5 +110,30 @@ public class Song {
     @PreUpdate
     protected void onUpdate() {
         updatedAt = new Date();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == this) return true;
+        if (!(obj instanceof Song)) {
+            return false;
+        }
+        Song song = (Song) obj;
+        return id == song.id &&
+                trackNumber == trackNumber &&
+                bpm == bpm &&
+                Objects.equals(name, song.name) &&
+                Objects.equals(songFile, song.songFile) &&
+                Objects.equals(duration, song.duration) &&
+                Objects.equals(release, song.release) &&
+                Objects.equals(artists, song.artists) &&
+                Objects.equals(genre, song.genre) &&
+                Objects.equals(slug, song.slug);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, trackNumber, bpm, name, songFile, duration,
+                release, artists, genre, slug);
     }
 }

@@ -1,11 +1,13 @@
 package com.tradekraftcollective.microservice.persistence.entity;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.*;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.tradekraftcollective.microservice.strategy.ImageSize;
 import lombok.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.persistence.*;
 import java.util.*;
@@ -16,10 +18,19 @@ import java.util.*;
 @Entity
 @Data
 @Table(name = "artists")
-@EqualsAndHashCode(callSuper = false, exclude={"songs", "events"})
+@Cacheable(false)
+//@JsonIdentityInfo( scope = Artist.class,
+//        generator = ObjectIdGenerators.PropertyGenerator.class,
+//        property = "id"
+//)
 public class Artist {
+    private static Logger logger = LoggerFactory.getLogger(Artist.class);
 
     public static final String ARTIST_IMAGE_UPLOAD_PATH = "uploads/artist/image/";
+
+    public static final String ARTIST_AWS_URL = "https://s3.amazonaws.com/tradekraft-assets/uploads/artist/image/";
+
+    public static final double RELEASE_TO_APPEARS_ON_RATIO = 0.80;
 
     @JsonIgnore
     public List<ImageSize> getImageSizes() {
@@ -30,12 +41,6 @@ public class Artist {
 
         return imageSizes;
     }
-
-    @Transient
-    @JsonIgnore
-    @Getter(AccessLevel.NONE)
-    @Setter(AccessLevel.NONE)
-    private static final String ARTIST_AWS_URL = "https://s3.amazonaws.com/tradekraft-assets/uploads/artist/image/";
 
     @Id
     @Column(name = "id", nullable = false)
@@ -75,14 +80,51 @@ public class Artist {
     @Column(name = "updated_at", nullable = false)
     private Date updatedAt;
 
-    @ManyToMany(mappedBy="artists")
-    @JsonIgnoreProperties("artists")
-    private Set<Song> songs;
+    @ManyToMany(mappedBy="artists", fetch = FetchType.EAGER)
+    @JsonIgnore
+    private List<Song> songs;
 
     @ManyToMany(mappedBy="artists")
-    @JsonIgnoreProperties("artists")
     @OrderBy("startDateTime ASC")
-    private Set<Event> events;
+    @JsonIgnoreProperties("artists")
+    private List<Event> events;
+
+    public JsonNode getReleases() {
+        ObjectMapper objectMapper = new ObjectMapper();
+        ObjectNode objectNode = objectMapper.createObjectNode();
+
+        Set<Release> releaseSet = new HashSet<>();
+        for(Song song : getSongs()) {
+            logger.info("Release Name: {}", song.getRelease().getName());
+            releaseSet.add(song.getRelease());
+        }
+
+        List<Release> releaseList = new ArrayList<>();
+        List<Release> appearsOnList = new ArrayList<>();
+        for(Release release : releaseSet) {
+            if(ownsRelease(release)) {
+                releaseList.add(release);
+            } else {
+                appearsOnList.add(release);
+            }
+        }
+
+        sortReleaseList(releaseList);
+        sortReleaseList(appearsOnList);
+
+        objectNode.set("artistReleases", objectMapper.convertValue(releaseList, JsonNode.class));
+        objectNode.set("appearsOn", objectMapper.convertValue(appearsOnList, JsonNode.class));
+
+        return objectNode;
+    }
+
+    private void sortReleaseList(List<Release> releases) {
+        Collections.sort(releases, new Comparator<Release>() {
+            public int compare(Release lhs, Release rhs) {
+                return lhs.getReleaseDate().compareTo(rhs.getReleaseDate());
+            }
+        });
+    }
 
     @JsonIgnore
     public String getImageName() {
@@ -115,5 +157,44 @@ public class Artist {
     @PreUpdate
     protected void onUpdate() {
         updatedAt = new Date();
+    }
+
+    private boolean ownsRelease(Release release) {
+        int inSongs = 0;
+        int totalSongs = release.getSongs().size();
+
+        for(Song song : release.getSongs()) {
+            if(song.getArtists().contains(this)) {
+                inSongs++;
+            }
+        }
+
+        return (inSongs / totalSongs) >= RELEASE_TO_APPEARS_ON_RATIO;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == this) return true;
+        if (!(obj instanceof Artist)) {
+            return false;
+        }
+        Artist artist = (Artist) obj;
+        return id == artist.id &&
+                Objects.equals(name, artist.name) &&
+                Objects.equals(description, artist.description) &&
+                Objects.equals(image, artist.image) &&
+                Objects.equals(soundcloud, artist.soundcloud) &&
+                Objects.equals(facebook, artist.facebook) &&
+                Objects.equals(instagram, artist.instagram) &&
+                Objects.equals(twitter, artist.twitter) &&
+                Objects.equals(spotify, artist.spotify) &&
+                Objects.equals(slug, artist.slug) &&
+                Objects.equals(events, artist.events);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, name, description, image, soundcloud, facebook,
+                instagram, twitter, spotify, slug, events);
     }
 }
