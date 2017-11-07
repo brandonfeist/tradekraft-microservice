@@ -2,8 +2,7 @@ package com.tradekraftcollective.microservice.utilities;
 
 import com.tradekraftcollective.microservice.exception.ErrorCode;
 import com.tradekraftcollective.microservice.exception.ServiceException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -19,10 +18,9 @@ import java.util.Map;
 /**
  * Created by brandonfeist on 9/9/17.
  */
+@Slf4j
 @Component
 public class ImageValidationUtil {
-    private final Logger logger = LoggerFactory.getLogger(ImageValidationUtil.class);
-
     private final Map<String, String> imageExtensionWhitelist;
 
     public ImageValidationUtil() {
@@ -33,7 +31,7 @@ public class ImageValidationUtil {
 
     public void minimumImageSize(int width, int height, BufferedImage image) {
         if(image.getWidth() < width || image.getHeight() < height) {
-            logger.error("Invalid image dimensions ({}, {}) must be at least ({}, {})",
+            log.error("Invalid image dimensions ({}, {}) must be at least ({}, {})",
                     image.getWidth(), image.getHeight(), width, height);
             throw new ServiceException(ErrorCode.INVALID_IMAGE_DEMINSIONS,
                     String.format("image dimensions must be at least [%s, %s]", width, height));
@@ -48,12 +46,12 @@ public class ImageValidationUtil {
             while (imageReaders.hasNext()) {
                 ImageReader reader = (ImageReader) imageReaders.next();
                 if (!imageExtensionWhitelist.containsKey(reader.getFormatName().toLowerCase())) {
-                    logger.error("Invalid image extension.");
+                    log.error("Invalid image extension.");
                     throw new ServiceException(ErrorCode.INVALID_IMAGE_EXTENSION, "valid extensions are (jpg, jpeg, gif, or png)");
                 }
             }
         } catch(IOException | IllegalArgumentException e) {
-            logger.error("Invalid image extension.");
+            log.error("Invalid image extension.");
             throw new ServiceException(ErrorCode.INVALID_IMAGE_EXTENSION, "valid extensions are (jpg, jpeg, gif, or png)");
         }
     }

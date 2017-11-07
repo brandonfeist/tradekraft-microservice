@@ -13,18 +13,16 @@ import com.tradekraftcollective.microservice.persistence.entity.Event;
 import com.tradekraftcollective.microservice.repository.IArtistRepository;
 import com.tradekraftcollective.microservice.repository.IEventRepository;
 import com.tradekraftcollective.microservice.service.AmazonS3Service;
-import com.tradekraftcollective.microservice.service.IArtistPatchService;
 import com.tradekraftcollective.microservice.service.IEventManagementService;
+import com.tradekraftcollective.microservice.service.IEventPatchService;
 import com.tradekraftcollective.microservice.utilities.ImageProcessingUtil;
 import com.tradekraftcollective.microservice.validator.EventValidator;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StopWatch;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.inject.Inject;
@@ -34,10 +32,9 @@ import java.util.*;
 /**
  * Created by brandonfeist on 9/28/17.
  */
+@Slf4j
 @Service
 public class EventManagementService implements IEventManagementService {
-    private static final Logger logger = LoggerFactory.getLogger(EventManagementService.class);
-
     private static final String DESCENDING = "desc";
     private static final String EVENT_IMAGE_PATH = "uploads/event/image/";
 
@@ -48,7 +45,7 @@ public class EventManagementService implements IEventManagementService {
     EventValidator eventValidator;
 
     @Inject
-    EventPatchService eventPatchService;
+    IEventPatchService eventPatchService;
 
     @Inject
     IArtistRepository artistRepository;
@@ -59,9 +56,12 @@ public class EventManagementService implements IEventManagementService {
     @Inject
     AmazonS3Service amazonS3Service;
 
+    @Inject
+    ObjectMapper objectMapper;
+
     @Override
     public Page<Event> getEvents(int page, int pageSize, String sortField, String sortOrder) {
-        logger.info("Fetching events, page: {} pageSize: {} sortField: {} sortOrder: {}", page, pageSize, sortField, sortOrder);
+        log.info("Fetching events, page: {} pageSize: {} sortField: {} sortOrder: {}", page, pageSize, sortField, sortOrder);
 
         Sort.Direction order = Sort.Direction.ASC;
         if(sortOrder != null && sortOrder.equalsIgnoreCase(DESCENDING)) {
@@ -76,7 +76,7 @@ public class EventManagementService implements IEventManagementService {
     @Override
     public Event getEvent(String eventSlug) {
         if(eventSlug == null) {
-            logger.error("Event slug cannot be null");
+            log.error("Event slug cannot be null");
             throw new ServiceException(ErrorCode.INVALID_EVENT_SLUG, "event slug cannot be null.");
         }
 
@@ -88,14 +88,10 @@ public class EventManagementService implements IEventManagementService {
     }
 
     @Override
-    public Event createEvent(Event event, MultipartFile imageFile, StopWatch stopWatch) {
-        logger.info("Create event, name: {}", event.getName());
+    public Event createEvent(Event event, MultipartFile imageFile) {
+        log.info("Create event, name: {}", event.getName());
 
-        stopWatch.start("validateEvent");
         eventValidator.validateEvent(event, imageFile);
-        stopWatch.stop();
-
-        stopWatch.start("saveEvent");
 
         event.setArtists(findAndSetEventArtists(event));
 
@@ -107,32 +103,28 @@ public class EventManagementService implements IEventManagementService {
 
         Event returnEvent = eventRepository.save(event);
 
-        stopWatch.stop();
-        logger.info("***** SUCCESSFULLY CREATED EVENT WITH SLUG = {} *****", returnEvent.getSlug());
+        log.info("***** SUCCESSFULLY CREATED EVENT WITH SLUG = {} *****", returnEvent.getSlug());
 
         return returnEvent;
     }
 
     @Override
     @Transactional(rollbackFor = {RuntimeException.class, ServiceException.class, IOException.class})
-    public Event patchEvent(List<JsonPatchOperation> patchOperations, MultipartFile imageFile, String eventSlug, StopWatch stopWatch) {
+    public Event patchEvent(List<JsonPatchOperation> patchOperations, MultipartFile imageFile, String eventSlug) {
 
-        stopWatch.start("getOldEvent");
         Event oldEvent = eventRepository.findBySlug(eventSlug);
         if(oldEvent == null) {
-            logger.error("Event with slug [{}] does not exist", eventSlug);
+            log.error("Event with slug [{}] does not exist", eventSlug);
             throw new ServiceException(ErrorCode.INVALID_EVENT_SLUG, "Event with slug [" + eventSlug + "] does not exist");
         }
-        stopWatch.stop();
 
         boolean uploadingNewImage = (imageFile != null);
         if(uploadingNewImage) {
             JsonPatchOperation imageOperation;
-            ObjectMapper objectMapper = new ObjectMapper();
 
             try {
                 if (oldEvent.getImage() != null) {
-                    logger.info("New image found, creating imagePatch operation: [{}], overwriting image: {}",
+                    log.info("New image found, creating imagePatch operation: [{}], overwriting image: {}",
                             PatchOperationConstants.REPLACE, oldEvent.getImageName());
 
                     String jsonImageReplacePatch = "{\"op\": \"" + PatchOperationConstants.REPLACE + "\", " +
@@ -143,7 +135,7 @@ public class EventManagementService implements IEventManagementService {
 
                     patchOperations.add(imageOperation);
                 } else {
-                    logger.info("New image found, creating imagePatch operation: {}", PatchOperationConstants.ADD);
+                    log.info("New image found, creating imagePatch operation: {}", PatchOperationConstants.ADD);
 
                     String jsonImageReplacePatch = "{\"op\": \"" + PatchOperationConstants.ADD + "\", " +
                             "\"path\": \"" + EventPatchService.EVENT_IMAGE_PATH + "\", " +
@@ -157,8 +149,6 @@ public class EventManagementService implements IEventManagementService {
                 e.printStackTrace();
             }
         }
-
-        stopWatch.start("patchEvent");
 
         Event patchedEvent = eventPatchService.patchEvent(patchOperations, oldEvent);
 
@@ -183,16 +173,14 @@ public class EventManagementService implements IEventManagementService {
 
         eventRepository.save(patchedEvent);
 
-        stopWatch.stop();
-
-        logger.info("***** SUCCESSFULLY PATCHED EVENT WITH SLUG = {} *****", patchedEvent.getSlug());
+        log.info("***** SUCCESSFULLY PATCHED EVENT WITH SLUG = {} *****", patchedEvent.getSlug());
 
         return patchedEvent;
     }
 
     @Override
     public void deleteEvent(String eventSlug) {
-        logger.info("Delete event, slug: {}", eventSlug);
+        log.info("Delete event, slug: {}", eventSlug);
 
         eventValidator.validateEventSlug(eventSlug);
 
@@ -203,7 +191,7 @@ public class EventManagementService implements IEventManagementService {
 
         eventRepository.deleteBySlug(eventSlug);
 
-        logger.info("***** SUCCESSFULLY DELETED EVENT WITH SLUG = {} *****", eventSlug);
+        log.info("***** SUCCESSFULLY DELETED EVENT WITH SLUG = {} *****", eventSlug);
     }
 
     private String createEventSlug(String eventName) {
@@ -220,7 +208,7 @@ public class EventManagementService implements IEventManagementService {
         for(Artist artist : event.getArtists()) {
             Artist checkedArtist = artistRepository.findBySlug(artist.getSlug());
             if(checkedArtist == null) {
-                logger.error("Event artist with slug [{}] does not exist.", artist.getSlug());
+                log.error("Event artist with slug [{}] does not exist.", artist.getSlug());
                 throw new ServiceException(ErrorCode.INVALID_ARTIST_SLUG, "artist with slug [" + artist.getSlug() + "] does not exist.");
             }
 

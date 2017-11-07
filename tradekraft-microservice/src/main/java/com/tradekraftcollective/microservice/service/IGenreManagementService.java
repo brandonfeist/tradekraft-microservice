@@ -3,7 +3,6 @@ package com.tradekraftcollective.microservice.service;
 import com.github.fge.jsonpatch.JsonPatchOperation;
 import com.tradekraftcollective.microservice.persistence.entity.Genre;
 import org.springframework.data.domain.Page;
-import org.springframework.util.StopWatch;
 
 import java.util.List;
 
@@ -15,9 +14,9 @@ public interface IGenreManagementService {
 
     Genre getGenre(Long genreId);
 
-    Genre createGenre(Genre genre, StopWatch stopWatch);
+    Genre createGenre(Genre genre);
 
-    Genre patchGenre(final List<JsonPatchOperation> patchOperations, final Long genreId, StopWatch stopWatch);
+    Genre patchGenre(final List<JsonPatchOperation> patchOperations, final Long genreId);
 
     void deleteGenre(Long genreId);
 }

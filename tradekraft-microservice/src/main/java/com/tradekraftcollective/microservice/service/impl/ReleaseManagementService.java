@@ -13,12 +13,9 @@ import com.tradekraftcollective.microservice.service.IReleaseManagementService;
 import com.tradekraftcollective.microservice.service.ISongManagementService;
 import com.tradekraftcollective.microservice.utilities.ImageProcessingUtil;
 import com.tradekraftcollective.microservice.validator.ReleaseValidator;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StopWatch;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.inject.Inject;
@@ -27,10 +24,9 @@ import java.util.*;
 /**
  * Created by brandonfeist on 10/22/17.
  */
+@Slf4j
 @Service
 public class ReleaseManagementService implements IReleaseManagementService {
-    private static Logger logger = LoggerFactory.getLogger(ReleaseManagementService.class);
-
     private static final String DESCENDING = "desc";
     private static final String RELEASE_IMAGE_PATH = "uploads/release/image/";
 
@@ -51,7 +47,7 @@ public class ReleaseManagementService implements IReleaseManagementService {
 
     @Override
     public Page<Release> getReleases(int page, int pageSize, String sortField, String sortOrder) {
-        logger.info("Fetching releases, page: {} pageSize: {} sortField: {} sortOrder: {}", page, pageSize, sortField, sortOrder);
+        log.info("Fetching releases, page: {} pageSize: {} sortField: {} sortOrder: {}", page, pageSize, sortField, sortOrder);
 
         Sort.Direction order = Sort.Direction.ASC;
         if(sortOrder != null && sortOrder.equalsIgnoreCase(DESCENDING)) {
@@ -66,7 +62,7 @@ public class ReleaseManagementService implements IReleaseManagementService {
     @Override
     public Release getRelease(String releaseSlug) {
         if(releaseSlug == null) {
-            logger.error("Release slug cannot be null");
+            log.error("Release slug cannot be null");
             throw new ServiceException(ErrorCode.INVALID_RELEASE_SLUG, "release slug cannot be null.");
         }
 
@@ -78,14 +74,10 @@ public class ReleaseManagementService implements IReleaseManagementService {
     }
 
     @Override
-    public Release createRelease(Release release, MultipartFile imageFile, MultipartFile[] songFiles, StopWatch stopWatch) {
-        logger.info("Create release, name: {}, with {} songs", release.getName(), release.getSongs().size());
+    public Release createRelease(Release release, MultipartFile imageFile, MultipartFile[] songFiles) {
+        log.info("Create release, name: {}, with {} songs", release.getName(), release.getSongs().size());
 
-        stopWatch.start("validateReleaseAndSongs");
         releaseValidator.validateRelease(release, imageFile, songFiles);
-        stopWatch.stop();
-
-        stopWatch.start("saveReleasesAndSongs");
 
         release.setSlug(createReleaseSlug(release.getName()));
 
@@ -103,20 +95,18 @@ public class ReleaseManagementService implements IReleaseManagementService {
 
         Release returnRelease = releaseRepository.save(release);
 
-        stopWatch.stop();
-
-        logger.info("***** SUCCESSFULLY CREATED RELEASE WITH SLUG = {} AND NUMBER OF SONG = {} *****", returnRelease.getSlug(), returnRelease.getSongs().size());
+        log.info("***** SUCCESSFULLY CREATED RELEASE WITH SLUG = {} AND NUMBER OF SONG = {} *****", returnRelease.getSlug(), returnRelease.getSongs().size());
 
         return returnRelease;
     }
 
     @Override
     public void deleteRelease(String releaseSlug) {
-        logger.info("Delete release, slug: {}", releaseSlug);
+        log.info("Delete release, slug: {}", releaseSlug);
 
         Release release = releaseRepository.findBySlug(releaseSlug);
         if(release == null) {
-            logger.error("Release with slug [{}] does not exist", releaseSlug);
+            log.error("Release with slug [{}] does not exist", releaseSlug);
             throw new ServiceException(ErrorCode.INVALID_RELEASE_SLUG, "Release with slug [" + releaseSlug + "] does not exist");
         }
 
@@ -131,7 +121,7 @@ public class ReleaseManagementService implements IReleaseManagementService {
 
         releaseRepository.deleteBySlug(releaseSlug);
 
-        logger.info("***** SUCCESSFULLY DELETED RELEASE WITH SLUG = {} *****", releaseSlug);
+        log.info("***** SUCCESSFULLY DELETED RELEASE WITH SLUG = {} *****", releaseSlug);
     }
 
     private String createReleaseSlug(String releaseName) {

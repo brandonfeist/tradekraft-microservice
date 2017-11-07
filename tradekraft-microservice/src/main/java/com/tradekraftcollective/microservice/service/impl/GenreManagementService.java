@@ -9,14 +9,12 @@ import com.tradekraftcollective.microservice.service.IGenreManagementService;
 import com.tradekraftcollective.microservice.service.IGenrePatchService;
 import com.tradekraftcollective.microservice.utilities.ColorUtility;
 import com.tradekraftcollective.microservice.validator.GenreValidator;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StopWatch;
 
 import javax.inject.Inject;
 import java.util.List;
@@ -24,10 +22,9 @@ import java.util.List;
 /**
  * Created by brandonfeist on 9/26/17.
  */
+@Slf4j
 @Service
 public class GenreManagementService implements IGenreManagementService {
-    private static final Logger logger = LoggerFactory.getLogger(GenreManagementService.class);
-
     private static final String DESCENDING = "desc";
 
     @Inject
@@ -44,7 +41,7 @@ public class GenreManagementService implements IGenreManagementService {
 
     @Override
     public Page<Genre> getGenres(int page, int pageSize, String sortField, String sortOrder) {
-        logger.info("Fetching genres, page: {} pageSize {} sortField {} sortOrder {}", page, pageSize, sortField, sortOrder);
+        log.info("Fetching genres, page: {} pageSize {} sortField {} sortOrder {}", page, pageSize, sortField, sortOrder);
 
         Sort.Direction order = Sort.Direction.ASC;
         if(sortOrder != null && sortOrder.equalsIgnoreCase(DESCENDING)) {
@@ -59,7 +56,7 @@ public class GenreManagementService implements IGenreManagementService {
     @Override
     public Genre getGenre(Long genreId) {
         if(genreId == null) {
-            logger.error("Genre id cannot be null");
+            log.error("Genre id cannot be null");
             throw new ServiceException(ErrorCode.INVALID_GENRE_ID, "genre id cannot be null.");
         }
 
@@ -69,36 +66,27 @@ public class GenreManagementService implements IGenreManagementService {
     }
 
     @Override
-    public Genre createGenre(Genre genre, StopWatch stopWatch) {
-        logger.info("Create genre, name: {}", genre.getName());
+    public Genre createGenre(Genre genre) {
+        log.info("Create genre, name: {}", genre.getName());
 
-        stopWatch.start("validateGenre");
         genreValidator.validateGenre(genre);
-        stopWatch.stop();
-
-        stopWatch.start("saveGenre");
 
         genre.setHue(colorUtility.rgbToHue(colorUtility.hexToRgb(genre.getColor())));
         Genre returnGenre = genreRepository.save(genre);
 
-        stopWatch.stop();
-        logger.info("***** SUCCESSFULLY CREATED GENRE WITH ID = {} *****", genre.getId());
+        log.info("***** SUCCESSFULLY CREATED GENRE WITH ID = {} *****", genre.getId());
 
         return returnGenre;
     }
 
     @Override
     @Transactional(rollbackFor = {RuntimeException.class, ServiceException.class})
-    public Genre patchGenre(List<JsonPatchOperation> patchOperations, Long genreId, StopWatch stopWatch) {
-        stopWatch.start("getOldGenre");
+    public Genre patchGenre(List<JsonPatchOperation> patchOperations, Long genreId) {
         Genre oldGenre = genreRepository.findOne(genreId);
         if(oldGenre == null) {
-            logger.error("Genre with id [{}] does not exist", genreId);
+            log.error("Genre with id [{}] does not exist", genreId);
             throw new ServiceException(ErrorCode.INVALID_GENRE_ID, "Genre with id [" + genreId + "] does not exist");
         }
-        stopWatch.stop();
-
-        stopWatch.start("patchArtist");
 
         Genre patchedGenre = genrePatchService.patchGenre(patchOperations, oldGenre);
 
@@ -106,19 +94,17 @@ public class GenreManagementService implements IGenreManagementService {
 
         genreRepository.save(patchedGenre);
 
-        stopWatch.stop();
-
-        logger.info("***** SUCCESSFULLY PATCHED GENRE WITH ID = {} *****", patchedGenre.getId());
+        log.info("***** SUCCESSFULLY PATCHED GENRE WITH ID = {} *****", patchedGenre.getId());
 
         return patchedGenre;
     }
 
     @Override
     public void deleteGenre(Long genreId) {
-        logger.info("Delete genre, id: {}", genreId);
+        log.info("Delete genre, id: {}", genreId);
 
         genreRepository.delete(genreId);
 
-        logger.info("***** SUCCESSFULLY DELETED GENRE WITH ID = {} *****", genreId);
+        log.info("***** SUCCESSFULLY DELETED GENRE WITH ID = {} *****", genreId);
     }
 }

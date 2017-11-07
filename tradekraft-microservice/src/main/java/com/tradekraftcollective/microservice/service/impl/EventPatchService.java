@@ -8,10 +8,10 @@ import com.tradekraftcollective.microservice.exception.ErrorCode;
 import com.tradekraftcollective.microservice.exception.ServiceException;
 import com.tradekraftcollective.microservice.persistence.entity.Event;
 import com.tradekraftcollective.microservice.service.IEventPatchService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import javax.inject.Inject;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -19,10 +19,9 @@ import java.util.Map;
 /**
  * Created by brandonfeist on 10/8/17.
  */
+@Slf4j
 @Service
 public class EventPatchService implements IEventPatchService {
-    private final Logger logger = LoggerFactory.getLogger(EventPatchService.class);
-
     public static final String EVENT_NAME_PATH = "/name";
     public static final String EVENT_IMAGE_PATH = "/image";
     public static final String EVENT_DESCRIPTION_PATH = "/description";
@@ -33,10 +32,13 @@ public class EventPatchService implements IEventPatchService {
     public static final String EVENT_STATE_PATH = "/state";
     public static final String EVENT_ZIP_PATH = "/zip";
 
+    @Inject
+    ObjectMapper objectMapper;
+
     @Override
     public Event patchEvent(List<JsonPatchOperation> patchOperations, Event event) {
         if(event == null) {
-            logger.error("Event cannot be null");
+            log.error("Event cannot be null");
             throw new ServiceException(ErrorCode.INVALID_ARTIST, "Event cannot be null");
         }
 
@@ -58,7 +60,6 @@ public class EventPatchService implements IEventPatchService {
             }
         }
 
-        ObjectMapper objectMapper = new ObjectMapper();
         JsonNode eventJsonNode = objectMapper.valueToTree(event);
 
         try {

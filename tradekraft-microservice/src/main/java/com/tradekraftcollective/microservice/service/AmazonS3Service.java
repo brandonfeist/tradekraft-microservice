@@ -2,8 +2,7 @@ package com.tradekraftcollective.microservice.service;
 
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
@@ -24,9 +23,9 @@ import java.util.List;
 /**
  * Created by brandonfeist on 9/7/17.
  */
+@Slf4j
 @Service
 public class AmazonS3Service {
-    private static final Logger logger = LoggerFactory.getLogger(AmazonS3Service.class);
 
     @Autowired
     private AmazonS3 amazonS3Client;
@@ -71,7 +70,7 @@ public class AmazonS3Service {
                     try {
                         putObjectResults.add(upload(multipartFile.getInputStream(), uploadKey));
 
-                        logger.info("Successfully uploaded file https://s3.amazonaws.com/{}/{}", bucket, uploadKey);
+                        log.info("Successfully uploaded file https://s3.amazonaws.com/{}/{}", bucket, uploadKey);
                     } catch(IOException e) {
                         e.printStackTrace();
                     }
@@ -81,7 +80,7 @@ public class AmazonS3Service {
     }
 
     public PutObjectResult upload(MultipartFile multipartFile, String filePath, String fileName) {
-        logger.info("Uploading file: {}", multipartFile.getOriginalFilename());
+        log.info("Uploading file: {}", multipartFile.getOriginalFilename());
 
         PutObjectResult putObjectResult = null;
         String uploadKey = (filePath + fileName);
@@ -92,24 +91,24 @@ public class AmazonS3Service {
             e.printStackTrace();
         }
 
-        logger.info("Successfully uploaded file https://s3.amazonaws.com/{}/{}", bucket, uploadKey);
+        log.info("Successfully uploaded file https://s3.amazonaws.com/{}/{}", bucket, uploadKey);
         return putObjectResult;
     }
 
     public PutObjectResult upload(File file, String filePath, String fileName) {
-        logger.info("Uploading file: {}", file.getName());
+        log.info("Uploading file: {}", file.getName());
 
         PutObjectResult putObjectResult = null;
         String uploadKey = (filePath + fileName);
 
         putObjectResult = upload(file, uploadKey);
 
-        logger.info("Successfully uploaded file https://s3.amazonaws.com/{}/{}", bucket, uploadKey);
+        log.info("Successfully uploaded file https://s3.amazonaws.com/{}/{}", bucket, uploadKey);
         return putObjectResult;
     }
 
     public void delete(String deleteKey) {
-        logger.info("Deleting AWS Key: {}", deleteKey);
+        log.info("Deleting AWS Key: {}", deleteKey);
 
         DeleteObjectRequest deleteObjectRequest = new DeleteObjectRequest(bucket, deleteKey);
 
@@ -117,7 +116,7 @@ public class AmazonS3Service {
     }
 
     public ObjectListing getDirectoryContent(String prefix, String delimiter) {
-        logger.info("Getting AWS directory objects with Prefix: {} and Delimiter: {}", prefix, delimiter);
+        log.info("Getting AWS directory objects with Prefix: {} and Delimiter: {}", prefix, delimiter);
 
         ListObjectsRequest listObjectsRequest = null;
 

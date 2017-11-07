@@ -2,9 +2,8 @@ package com.tradekraftcollective.microservice.utilities;
 
 import com.tradekraftcollective.microservice.service.AmazonS3Service;
 import com.tradekraftcollective.microservice.strategy.ImageSize;
+import lombok.extern.slf4j.Slf4j;
 import net.coobird.thumbnailator.Thumbnails;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -20,10 +19,9 @@ import java.util.List;
 /**
  * Created by brandonfeist on 9/8/17.
  */
+@Slf4j
 @Component
 public class ImageProcessingUtil {
-    private static Logger logger = LoggerFactory.getLogger(ImageProcessingUtil.class);
-
     @Inject
     AmazonS3Service amazonS3Service;
 
@@ -33,7 +31,7 @@ public class ImageProcessingUtil {
         try {
             for (ImageSize imageSize : imageSizes) {
                 if (imageSize.getSizeName().equals("original")) {
-                    logger.debug("Uploading original image size ({}, {})", imageSize.getWidth(), imageSize.getHeight());
+                    log.debug("Uploading original image size ({}, {})", imageSize.getWidth(), imageSize.getHeight());
 
                     File tmpFile = new File(fileName);
 
@@ -45,7 +43,7 @@ public class ImageProcessingUtil {
 
                     tmpFile.delete();
                 } else {
-                    logger.debug("Uploading {} image size ({}, {})", imageSize.getSizeName(), imageSize.getWidth(), imageSize.getHeight());
+                    log.debug("Uploading {} image size ({}, {})", imageSize.getSizeName(), imageSize.getWidth(), imageSize.getHeight());
 
                     File tmpFile = new File((imageSize.getSizeName() + "_" + fileName));
 

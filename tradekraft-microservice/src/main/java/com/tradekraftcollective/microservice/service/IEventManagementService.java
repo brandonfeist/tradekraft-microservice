@@ -3,7 +3,6 @@ package com.tradekraftcollective.microservice.service;
 import com.github.fge.jsonpatch.JsonPatchOperation;
 import com.tradekraftcollective.microservice.persistence.entity.Event;
 import org.springframework.data.domain.Page;
-import org.springframework.util.StopWatch;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
@@ -16,9 +15,9 @@ public interface IEventManagementService {
 
     Event getEvent(String eventSlug);
 
-    Event createEvent(Event event, MultipartFile imageFile, StopWatch stopWatch);
+    Event createEvent(Event event, MultipartFile imageFile);
 
-    Event patchEvent(final List<JsonPatchOperation> patchOperations, final MultipartFile imageFile, final String artistSlug, StopWatch stopWatch);
+    Event patchEvent(final List<JsonPatchOperation> patchOperations, final MultipartFile imageFile, final String artistSlug);
 
     void deleteEvent(String eventSlug);
 }

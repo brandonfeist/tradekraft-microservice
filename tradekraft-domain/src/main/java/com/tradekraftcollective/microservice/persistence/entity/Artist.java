@@ -19,10 +19,6 @@ import java.util.*;
 @Data
 @Table(name = "artists")
 @Cacheable(false)
-//@JsonIdentityInfo( scope = Artist.class,
-//        generator = ObjectIdGenerators.PropertyGenerator.class,
-//        property = "id"
-//)
 public class Artist {
     private static Logger logger = LoggerFactory.getLogger(Artist.class);
 
@@ -95,7 +91,6 @@ public class Artist {
 
         Set<Release> releaseSet = new HashSet<>();
         for(Song song : getSongs()) {
-            logger.info("Release Name: {}", song.getRelease().getName());
             releaseSet.add(song.getRelease());
         }
 
@@ -124,6 +119,7 @@ public class Artist {
                 return lhs.getReleaseDate().compareTo(rhs.getReleaseDate());
             }
         });
+//      Lambda: (Release lhs, Release rhs) -> lhs.getReleaseDate().compareTo(rhs.getReleaseDate());
     }
 
     @JsonIgnore

@@ -12,8 +12,7 @@ import com.tradekraftcollective.microservice.repository.ISongRepository;
 import com.tradekraftcollective.microservice.service.AmazonS3Service;
 import com.tradekraftcollective.microservice.service.ISongManagementService;
 import com.tradekraftcollective.microservice.utilities.AudioProcessingUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -23,10 +22,9 @@ import java.util.*;
 /**
  * Created by brandonfeist on 10/22/17.
  */
+@Slf4j
 @Service
 public class SongManagementService implements ISongManagementService {
-    private static Logger logger = LoggerFactory.getLogger(SongManagementService.class);
-
     private static final String SONG_FILE_PATH = "uploads/song/release-song/";
 
     @Inject
@@ -46,7 +44,7 @@ public class SongManagementService implements ISongManagementService {
 
     @Override
     public Song createSong(Release release, Song song, MultipartFile songFile) {
-        logger.info("Processing song {}", song.getName());
+        log.info("Processing song {}", song.getName());
 
         song.setGenre(genreRepository.findByName(song.getGenre().getName()));
 
@@ -68,7 +66,7 @@ public class SongManagementService implements ISongManagementService {
 
     @Override
     public void deleteSong(Song song) {
-        logger.info("Delete song, name: {}", song.getName());
+        log.info("Delete song, name: {}", song.getName());
 
         ObjectListing directorySongs = amazonS3Service.getDirectoryContent((SONG_FILE_PATH + song.getSlug() + "/"), null);
         for (S3ObjectSummary summary: directorySongs.getObjectSummaries()) {

@@ -1,7 +1,6 @@
 package com.tradekraftcollective.microservice.utilities;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.awt.*;
@@ -9,10 +8,9 @@ import java.awt.*;
 /**
  * Created by brandonfeist on 9/26/17.
  */
+@Slf4j
 @Component
 public class ColorUtility {
-    private static final Logger logger = LoggerFactory.getLogger(ColorUtility.class);
-
     public int[] hexToRgb(String hex) {
         int[] rgb = {0, 0, 0};
 
@@ -26,7 +24,7 @@ public class ColorUtility {
         rgb[1] = color.getGreen();
         rgb[2] = color.getBlue();
 
-        logger.info("Converted Hex: {} to RGB: [{},{},{}]", hex, rgb[0], rgb[1], rgb[2]);
+        log.info("Converted Hex: {} to RGB: [{},{},{}]", hex, rgb[0], rgb[1], rgb[2]);
         return rgb;
     }
 
@@ -52,7 +50,7 @@ public class ColorUtility {
         hue = hue * 60;
         if (hue < 0) hue = hue + 360;
 
-        logger.info("RGB: [{},{},{}] converted to Hue: [{}]", rgb[0], rgb[1], rgb[2], Math.round(hue));
+        log.info("RGB: [{},{},{}] converted to Hue: [{}]", rgb[0], rgb[1], rgb[2], Math.round(hue));
         return Math.round(hue);
     }
 }

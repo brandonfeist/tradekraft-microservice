@@ -12,6 +12,7 @@ import com.tradekraftcollective.microservice.persistence.entity.Artist;
 import com.tradekraftcollective.microservice.repository.IArtistRepository;
 import com.tradekraftcollective.microservice.service.AmazonS3Service;
 import com.tradekraftcollective.microservice.service.IArtistManagementService;
+import com.tradekraftcollective.microservice.service.IArtistPatchService;
 import com.tradekraftcollective.microservice.utilities.ImageProcessingUtil;
 import com.tradekraftcollective.microservice.validator.ArtistValidator;
 import org.slf4j.Logger;
@@ -19,7 +20,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StopWatch;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.inject.Inject;
@@ -43,13 +43,16 @@ public class ArtistManagementService implements IArtistManagementService {
     ArtistValidator artistValidator;
 
     @Inject
-    ArtistPatchService artistPatchService;
+    IArtistPatchService artistPatchService;
 
     @Inject
     ImageProcessingUtil imageProcessingUtil;
 
     @Inject
     AmazonS3Service amazonS3Service;
+
+    @Inject
+    ObjectMapper objectMapper;
 
     @Override
     public Page<Artist> getArtists(int page, int pageSize, String sortField, String sortOrder, String artistQuery, String yearQuery) {
@@ -95,14 +98,10 @@ public class ArtistManagementService implements IArtistManagementService {
     }
 
     @Override
-    public Artist createArtist(Artist artist, MultipartFile imageFile, StopWatch stopWatch) {
+    public Artist createArtist(Artist artist, MultipartFile imageFile) {
         logger.info("Create artist, name: {}", artist.getName());
 
-        stopWatch.start("validateArtist");
         artistValidator.validateArtist(artist, imageFile);
-        stopWatch.stop();
-
-        stopWatch.start("saveArtist");
 
         artist.setSlug(createArtistSlug(artist.getName()));
 
@@ -112,8 +111,6 @@ public class ArtistManagementService implements IArtistManagementService {
 
         Artist returnArtist = artistRepository.save(artist);
 
-        stopWatch.stop();
-
         logger.info("***** SUCCESSFULLY CREATED ARTIST WITH SLUG = {} *****", returnArtist.getSlug());
 
         return returnArtist;
@@ -121,20 +118,17 @@ public class ArtistManagementService implements IArtistManagementService {
 
     @Override
     @Transactional(rollbackFor = {RuntimeException.class, ServiceException.class, IOException.class})
-    public Artist patchArtist(List<JsonPatchOperation> patchOperations, MultipartFile imageFile, String artistSlug, StopWatch stopWatch) {
+    public Artist patchArtist(List<JsonPatchOperation> patchOperations, MultipartFile imageFile, String artistSlug) {
 
-        stopWatch.start("getOldArtist");
         Artist oldArtist = artistRepository.findBySlug(artistSlug);
         if(oldArtist == null) {
             logger.error("Artist with slug [{}] does not exist", artistSlug);
             throw new ServiceException(ErrorCode.INVALID_ARTIST_SLUG, "Artist with slug [" + artistSlug + "] does not exist");
         }
-        stopWatch.stop();
 
         boolean uploadingNewImage = (imageFile != null);
         if(uploadingNewImage) {
             JsonPatchOperation imageOperation;
-            ObjectMapper objectMapper = new ObjectMapper();
 
             try {
                 if (oldArtist.getImage() != null) {
@@ -164,8 +158,6 @@ public class ArtistManagementService implements IArtistManagementService {
             }
         }
 
-        stopWatch.start("patchArtist");
-
         Artist patchedArtist = artistPatchService.patchArtist(patchOperations, oldArtist);
 
         if(!oldArtist.getName().equals(patchedArtist.getName())) {
@@ -188,8 +180,6 @@ public class ArtistManagementService implements IArtistManagementService {
         }
 
         artistRepository.save(patchedArtist);
-
-        stopWatch.stop();
 
         logger.info("***** SUCCESSFULLY PATCHED ARTIST WITH SLUG = {} *****", patchedArtist.getSlug());
 

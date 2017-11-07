@@ -163,7 +163,6 @@ public class Event {
                 Objects.equals(country, event.country) &&
                 Objects.equals(startDateTime, event.startDateTime) &&
                 Objects.equals(endDateTime, event.endDateTime) &&
-                Objects.equals(artists, event.artists) &&
                 Objects.equals(slug, event.slug);
     }
 
@@ -171,6 +170,6 @@ public class Event {
     public int hashCode() {
         return Objects.hash(id, officialEvent, latitude, longitude, name, description, image,
                 ticketLink, entryAge, venueName, address, city, state, zip, country, startDateTime, endDateTime,
-                artists, slug);
+                slug);
     }
 }

@@ -8,10 +8,10 @@ import com.tradekraftcollective.microservice.exception.ErrorCode;
 import com.tradekraftcollective.microservice.exception.ServiceException;
 import com.tradekraftcollective.microservice.persistence.entity.Genre;
 import com.tradekraftcollective.microservice.service.IGenrePatchService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import javax.inject.Inject;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -19,18 +19,20 @@ import java.util.Map;
 /**
  * Created by brandonfeist on 9/27/17.
  */
+@Slf4j
 @Service
 public class GenrePatchService implements IGenrePatchService {
-    private static final Logger logger = LoggerFactory.getLogger(GenrePatchService.class);
-
     public static final String GENRE_NAME_PATH = "/name";
     public static final String GENRE_COLOR_PATH = "/color";
     public static final String GENRE_HUE_PATH = "/hue";
 
+    @Inject
+    ObjectMapper objectMapper;
+
     @Override
     public Genre patchGenre(List<JsonPatchOperation> patchOperations, Genre genre) {
         if(genre == null) {
-            logger.error("Genre cannot be null");
+            log.error("Genre cannot be null");
             throw new ServiceException(ErrorCode.INVALID_GENRE, "Genre cannot be null");
         }
 
@@ -53,7 +55,6 @@ public class GenrePatchService implements IGenrePatchService {
             }
         }
 
-        ObjectMapper objectMapper = new ObjectMapper();
         JsonNode genreJsonNode = objectMapper.valueToTree(genre);
 
         try {

@@ -6,10 +6,9 @@ import com.tradekraftcollective.microservice.persistence.entity.Song;
 import com.tradekraftcollective.microservice.service.AmazonS3Service;
 import com.tradekraftcollective.microservice.strategies.MetaData;
 import com.tradekraftcollective.microservice.strategy.AudioFormat;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.ArrayUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -23,10 +22,9 @@ import java.util.regex.Pattern;
 /**
  * Created by brandonfeist on 10/23/17.
  */
+@Slf4j
 @Component
 public class AudioProcessingUtil {
-    private static Logger logger = LoggerFactory.getLogger(AudioProcessingUtil.class);
-
     private final String DURATION_REGEX = "^(\\s{2})(Duration\\:\\s)(\\d{2}\\:\\d{2}\\:\\d{2}\\.\\d{2})(.+)$";
 
     @Inject
@@ -41,7 +39,7 @@ public class AudioProcessingUtil {
         try {
             for(AudioFormat audioFormat : audioFormats) {
                 if(audioFormat.getFileName().equals("original")) {
-                    logger.debug("Uploading original audio file [{}]", originalFileName);
+                    log.debug("Uploading original audio file [{}]", originalFileName);
 
                     File tmpFile = convertAudio(song, fileNameNoExtension, audioFile, audioFormat, metaDataList);
 
@@ -49,7 +47,7 @@ public class AudioProcessingUtil {
 
                     tmpFile.delete();
                 } else {
-                    logger.debug("Uploading {} audio file [{}]", audioFormat.getFileName(), originalFileName);
+                    log.debug("Uploading {} audio file [{}]", audioFormat.getFileName(), originalFileName);
 
                     String updatedFileNameNoExtension = audioFormat.getFileName() + "_" + fileNameNoExtension;
                     File tmpFile = convertAudio(song, updatedFileNameNoExtension, audioFile, audioFormat, metaDataList);
@@ -76,7 +74,7 @@ public class AudioProcessingUtil {
 
         // Make a check to make sure extension and audio format are the same and are also valid.
 
-        logger.info("Converting audio file {} to {}", tmpAudioFile.getName(), outputFile.getName());
+        log.info("Converting audio file {} to {}", tmpAudioFile.getName(), outputFile.getName());
         String[] ffmpegCommand = {"ffmpeg", "-i", tmpAudioFile.getAbsolutePath(), "-c:a", audioFormat.getCodec(),
             "-ac", audioFormat.getChannels(), "-b:a", audioFormat.getBitRate()};
         String[] metaDataCommand = createMetaDataString(metaDataList);

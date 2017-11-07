@@ -1,16 +1,13 @@
 package com.tradekraftcollective.microservice.controller;
 
 import com.github.fge.jsonpatch.JsonPatchOperation;
-import com.tradekraftcollective.microservice.persistence.entity.Artist;
 import com.tradekraftcollective.microservice.persistence.entity.Genre;
 import com.tradekraftcollective.microservice.service.IGenreManagementService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.util.StopWatch;
 import org.springframework.web.bind.annotation.*;
 
 import javax.inject.Inject;
@@ -19,11 +16,10 @@ import java.util.List;
 /**
  * Created by brandonfeist on 9/26/17.
  */
+@Slf4j
 @RestController
 @RequestMapping("/v1/genres")
 public class GenreManagementController {
-    private static final Logger logger = LoggerFactory.getLogger(GenreManagementController.class);
-
     private static final String DEFAULT_PAGE_NUM = "0";
     private static final String DEFAULT_PAGE_SIZE = "100";
     private static final String SORT_ORDER_DESC = "asc";
@@ -40,7 +36,7 @@ public class GenreManagementController {
             @RequestParam(value = "sortOrder", defaultValue = SORT_ORDER_DESC, required = false) String sortOrder,
             @RequestHeader(value = "X-Request-ID", required = false) String xRequestId
     ) {
-        logger.info("getGenres [{}]", xRequestId);
+        log.info("getGenres [{}]", xRequestId);
 
         Page<Genre> genres = genreManagementService.getGenres(page, pageSize, sortField, sortOrder);
 
@@ -52,7 +48,7 @@ public class GenreManagementController {
             @PathVariable("id") Long genreId,
             @RequestHeader(value = "X-Request-ID", required = false) String xRequestId
     ) {
-        logger.info("getGenre [{}]", xRequestId);
+        log.info("getGenre [{}]", xRequestId);
 
         Genre genre = genreManagementService.getGenre(genreId);
 
@@ -64,11 +60,9 @@ public class GenreManagementController {
             @RequestBody Genre inputGenre,
             @RequestHeader(value = "X-Request-ID", required = false) String xRequestId
     ) {
-        logger.info("createGenre [{}] {}", xRequestId, inputGenre);
+        log.info("createGenre [{}] {}", xRequestId, inputGenre);
 
-        StopWatch stopWatch = new StopWatch("createGenre");
-
-        Genre genre = genreManagementService.createGenre(inputGenre, stopWatch);
+        Genre genre = genreManagementService.createGenre(inputGenre);
 
         return new ResponseEntity<>(genre, HttpStatus.CREATED);
     }
@@ -79,11 +73,9 @@ public class GenreManagementController {
             @RequestBody List<JsonPatchOperation> patches,
             @RequestHeader(value = "X-Request-ID", required = false) String xRequestId
     ) {
-        logger.info("patchGenre [{}] {}", xRequestId, genreId);
+        log.info("patchGenre [{}] {}", xRequestId, genreId);
 
-        StopWatch stopWatch = new StopWatch("patchGenre");
-
-        final Genre genre = genreManagementService.patchGenre(patches, genreId, stopWatch);
+        final Genre genre = genreManagementService.patchGenre(patches, genreId);
 
         return new ResponseEntity<>(genre, HttpStatus.OK);
     }
@@ -93,7 +85,7 @@ public class GenreManagementController {
             @PathVariable("id") Long genreId,
             @RequestHeader(value = "X-Request-ID", required = false) String xRequestId
     ) {
-        logger.info("deleteGenre [{}] {}", xRequestId, genreId);
+        log.info("deleteGenre [{}] {}", xRequestId, genreId);
 
         genreManagementService.deleteGenre(genreId);
 

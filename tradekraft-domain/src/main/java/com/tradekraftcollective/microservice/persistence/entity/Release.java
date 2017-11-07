@@ -1,9 +1,7 @@
 package com.tradekraftcollective.microservice.persistence.entity;
 
-import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.tradekraftcollective.microservice.strategy.ImageSize;
@@ -29,7 +27,7 @@ public class Release {
 
     public static final String RELEASE_IMAGE_UPLOAD_PATH = "uploads/release/image/";
 
-    public static final String ARTIST_AWS_URL = "https://s3.amazonaws.com/tradekraft-assets/uploads/artist/image/";
+    public static final String RELEASE_AWS_URL = "https://s3.amazonaws.com/tradekraft-assets/uploads/release/image/";
 
     @JsonIgnore
     public List<ImageSize> getImageSizes() {
@@ -105,10 +103,10 @@ public class Release {
         for (ImageSize imageSize : getImageSizes()) {
             if (imageSize.getSizeName().equals("original")) {
                 objectNode.put(imageSize.getSizeName(),
-                        (ARTIST_AWS_URL + slug + "/" + image));
+                        (RELEASE_AWS_URL + slug + "/" + image));
             } else {
                 objectNode.put(imageSize.getSizeName(),
-                        (ARTIST_AWS_URL + slug + "/" + imageSize.getSizeName() + "_" + image));
+                        (RELEASE_AWS_URL + slug + "/" + imageSize.getSizeName() + "_" + image));
             }
         }
 

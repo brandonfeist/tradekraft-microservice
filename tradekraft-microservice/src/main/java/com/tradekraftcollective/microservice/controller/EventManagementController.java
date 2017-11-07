@@ -3,8 +3,7 @@ package com.tradekraftcollective.microservice.controller;
 import com.github.fge.jsonpatch.JsonPatchOperation;
 import com.tradekraftcollective.microservice.persistence.entity.Event;
 import com.tradekraftcollective.microservice.service.IEventManagementService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -19,11 +18,10 @@ import java.util.List;
 /**
  * Created by brandonfeist on 9/28/17.
  */
+@Slf4j
 @RestController
 @RequestMapping("/v1/events")
 public class EventManagementController {
-    private static final Logger logger = LoggerFactory.getLogger(EventManagementController.class);
-
     private static final String DEFAULT_PAGE_NUM = "0";
     private static final String DEFAULT_PAGE_SIZE = "100";
     private static final String SORT_ORDER_DESC = "asc";
@@ -40,7 +38,7 @@ public class EventManagementController {
             @RequestParam(value = "sortOrder", defaultValue = SORT_ORDER_DESC, required = false) String sortOrder,
             @RequestHeader(value = "X-Request-ID", required = false) String xRequestId
     ) {
-        logger.info("getEvents [{}]", xRequestId);
+        log.info("getEvents [{}]", xRequestId);
 
         Page<Event> events = eventManagementService.getEvents(page, pageSize, sortField, sortOrder);
 
@@ -52,7 +50,7 @@ public class EventManagementController {
             @PathVariable("slug") String eventSlug,
             @RequestHeader(value = "X-Request-ID", required = false) String xRequestId
     ) {
-        logger.info("getEvent [{}]", xRequestId);
+        log.info("getEvent [{}]", xRequestId);
 
         Event event = eventManagementService.getEvent(eventSlug);
 
@@ -65,11 +63,9 @@ public class EventManagementController {
             @RequestPart("image") MultipartFile imageFile,
             @RequestHeader(value = "X-Request-ID", required = false) String xRequestId
     ) {
-        logger.info("createEvent [{}] {}", xRequestId, inputEvent);
+        log.info("createEvent [{}] {}", xRequestId, inputEvent);
 
-        StopWatch stopWatch = new StopWatch("createEvent");
-
-        Event event = eventManagementService.createEvent(inputEvent, imageFile, stopWatch);
+        Event event = eventManagementService.createEvent(inputEvent, imageFile);
 
         return new ResponseEntity<>(event, HttpStatus.CREATED);
     }
@@ -81,11 +77,9 @@ public class EventManagementController {
             @RequestPart(value = "image", required = false) MultipartFile imageFile,
             @RequestHeader(value = "X-Request-ID", required = false) String xRequestId
     ) {
-        logger.info("patchArtist [{}] {}", xRequestId, eventSlug);
+        log.info("patchArtist [{}] {}", xRequestId, eventSlug);
 
-        StopWatch stopWatch = new StopWatch("patchEvent");
-
-        final Event event = eventManagementService.patchEvent(patches, imageFile, eventSlug, stopWatch);
+        final Event event = eventManagementService.patchEvent(patches, imageFile, eventSlug);
 
         return new ResponseEntity<>(event, HttpStatus.OK);
     }
@@ -95,7 +89,7 @@ public class EventManagementController {
             @PathVariable("slug") String eventSlug,
             @RequestHeader(value = "X-Request-ID", required = false) String xRequestId
     ) {
-        logger.info("deleteArtist [{}] {}", xRequestId, eventSlug);
+        log.info("deleteArtist [{}] {}", xRequestId, eventSlug);
 
         eventManagementService.deleteEvent(eventSlug);
 

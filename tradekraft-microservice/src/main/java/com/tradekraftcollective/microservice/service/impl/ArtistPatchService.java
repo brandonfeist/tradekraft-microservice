@@ -8,10 +8,10 @@ import com.tradekraftcollective.microservice.exception.ErrorCode;
 import com.tradekraftcollective.microservice.exception.ServiceException;
 import com.tradekraftcollective.microservice.persistence.entity.Artist;
 import com.tradekraftcollective.microservice.service.IArtistPatchService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import javax.inject.Inject;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -19,10 +19,9 @@ import java.util.Map;
 /**
  * Created by brandonfeist on 9/14/17.
  */
+@Slf4j
 @Service
 public class ArtistPatchService implements IArtistPatchService {
-    private final Logger logger = LoggerFactory.getLogger(ArtistPatchService.class);
-
     public static final String ARTIST_NAME_PATH = "/name";
     public static final String ARTIST_DESCRIPTION_PATH = "/description";
     public static final String ARTIST_IMAGE_PATH = "/image";
@@ -32,10 +31,13 @@ public class ArtistPatchService implements IArtistPatchService {
     public static final String ARTIST_INSTAGRAM_PATH = "/instagram";
     public static final String ARTIST_SPOTIFY_PATH = "/spotify";
 
+    @Inject
+    ObjectMapper objectMapper;
+
     @Override
     public Artist patchArtist(List<JsonPatchOperation> patchOperations, Artist artist) {
         if(artist == null) {
-            logger.error("Artist cannot be null");
+            log.error("Artist cannot be null");
             throw new ServiceException(ErrorCode.INVALID_ARTIST, "Artist cannot be null");
         }
 
@@ -63,7 +65,6 @@ public class ArtistPatchService implements IArtistPatchService {
             }
         }
 
-        ObjectMapper objectMapper = new ObjectMapper();
         JsonNode artistJsonNode = objectMapper.valueToTree(artist);
 
         try {
