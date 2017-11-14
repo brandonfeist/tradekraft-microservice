@@ -19,10 +19,6 @@ import java.util.Objects;
 @Entity
 @Data
 @Table(name = "releases")
-//@JsonIdentityInfo( scope = Release.class,
-//        generator = ObjectIdGenerators.PropertyGenerator.class,
-//        property = "id"
-//)
 public class Release {
 
     public static final String RELEASE_IMAGE_UPLOAD_PATH = "uploads/release/image/";

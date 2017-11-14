@@ -7,7 +7,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Scope;
 import org.springframework.context.annotation.ScopedProxyMode;
+import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.util.StopWatch;
+import org.springframework.web.client.RestTemplate;
 
 /**
  * Created by brandonfeist on 11/6/17.
@@ -16,6 +18,14 @@ import org.springframework.util.StopWatch;
 @Configuration
 @EnableAutoConfiguration
 public class ApplicationConfiguration {
+
+    @Bean
+    public RestTemplate restTemplate() {
+        RestTemplate restTemplate = new RestTemplate();
+        restTemplate.getMessageConverters().add(new MappingJackson2HttpMessageConverter());
+
+        return restTemplate;
+    }
 
     @Bean
     public ObjectMapper objectMapper() { return new ObjectMapper(); }
