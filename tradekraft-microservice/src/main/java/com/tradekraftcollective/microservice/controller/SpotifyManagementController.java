@@ -1,13 +1,11 @@
 package com.tradekraftcollective.microservice.controller;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tradekraftcollective.microservice.service.ISpotifyManagementService;
 import lombok.extern.slf4j.Slf4j;
+import net.sf.json.JSONObject;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 
@@ -44,7 +42,20 @@ public class SpotifyManagementController {
     ) {
         log.info("getSpotifyToken [{}]", xRequestId);
 
-        String spotifyAuthResponseJson = spotifyManagementService.getSpotifyAuthorizationToken(authorizationCode, redirectUri);
+        JSONObject spotifyAuthResponseJson = spotifyManagementService.getSpotifyAuthorizationToken(authorizationCode, redirectUri);
+
+        return new ResponseEntity<>(spotifyAuthResponseJson, HttpStatus.OK);
+    }
+
+    @RequestMapping(value = "/authorize/refresh", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> refreshSpotifyToken(
+            @RequestParam(value = "refresh_token") String refreshToken,
+            @RequestHeader(value = "Authorization") String authorization,
+            @RequestHeader(value = "X-Request-ID", required = false) String xRequestId
+    ) {
+        log.info("refreshSpotifyToken [{}]", xRequestId);
+
+        JSONObject spotifyAuthResponseJson = spotifyManagementService.refreshSpotifyToken(authorization, refreshToken);
 
         return new ResponseEntity<>(spotifyAuthResponseJson, HttpStatus.OK);
     }

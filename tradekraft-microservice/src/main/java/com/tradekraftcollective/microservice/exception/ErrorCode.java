@@ -38,7 +38,11 @@ public enum ErrorCode {
     INVALID_IMAGE_DEMINSIONS(HttpStatus.BAD_REQUEST.value(), "Invalid image dimensions"),
     INVALID_IMAGE_EXTENSION(HttpStatus.BAD_REQUEST.value(), "Invalid image extension"),
 
-    INVALID_DATE_RANGE(HttpStatus.BAD_REQUEST.value(), "Invalid date range");
+    INVALID_DATE_RANGE(HttpStatus.BAD_REQUEST.value(), "Invalid date range"),
+
+    EXTERNAL_SERVICE_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR.value(), "External service, internal server error"),
+    EXTERNAL_SERVICE_BAD_REQUEST(HttpStatus.BAD_REQUEST.value(), "External service, bad request"),
+    EXTERNAL_SERVICE_EMPTY_RESPONSE(HttpStatus.NO_CONTENT.value(), "External service, empty response");
 
     private final int errorCode;
 
