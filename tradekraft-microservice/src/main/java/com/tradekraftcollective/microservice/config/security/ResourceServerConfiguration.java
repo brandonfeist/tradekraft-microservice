@@ -16,7 +16,7 @@ import org.springframework.security.oauth2.provider.token.store.JwtAccessTokenCo
 @EnableResourceServer
 public class ResourceServerConfiguration extends ResourceServerConfigurerAdapter {
 
-    @Value("signing-key:MaYzkSjmkzPC57L")
+    @Value("${vcap.services.authentication.config.signing-key}")
     private String signingKey;
 
     public ResourceServerConfiguration() {

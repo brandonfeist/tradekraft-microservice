@@ -1,5 +1,6 @@
 package com.tradekraftcollective.microservice.config.security;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -16,12 +17,21 @@ import org.springframework.security.oauth2.provider.token.ResourceServerTokenSer
 @Configuration
 public class ResourceServer extends WebSecurityConfigurerAdapter {
 
+    @Value("${vcap.services.authentication.config.client-id}")
+    private String clientId;
+
+    @Value("${vcap.services.authentication.config.client-secret}")
+    private String clientSecret;
+
+    @Value("${vcap.services.authentication.config.auth-service-uri}")
+    private String uri;
+
     @Bean
     public ResourceServerTokenServices tokenService() {
         RemoteTokenServices tokenServices = new RemoteTokenServices();
-        tokenServices.setClientId("testjwtclientid");
-        tokenServices.setClientSecret("MaYzkSjmkzPC57L");
-        tokenServices.setCheckTokenEndpointUrl("http://localhost:8086/oauth/check_token");
+        tokenServices.setClientId(clientId);
+        tokenServices.setClientSecret(clientSecret);
+        tokenServices.setCheckTokenEndpointUrl(uri + "/oauth/check_token");
         return tokenServices;
     }
 
