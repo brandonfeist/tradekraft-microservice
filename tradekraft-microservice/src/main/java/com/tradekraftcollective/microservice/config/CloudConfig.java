@@ -2,6 +2,7 @@ package com.tradekraftcollective.microservice.config;
 
 import com.tradekraftcollective.microservice.config.datasource.DataSourceRouting;
 import com.tradekraftcollective.microservice.config.datasource.FinalDataSourceConfig;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,22 +17,21 @@ import javax.sql.DataSource;
 /**
  * Created by brandonfeist on 9/3/17.
  */
+@Slf4j
 @Configuration
 public class CloudConfig {
-    private static Logger logger = LoggerFactory.getLogger(CloudConfig.class);
-
     @Autowired
     FinalDataSourceConfig finalDataSourceConfig;
 
     @Bean
     public DataSource dataSource() {
-        logger.info("Using cloud DataSource");
+        log.info("Using cloud DataSource");
         return new DataSourceRouting(finalDataSourceConfig);
     }
 
     @Bean
     LocalContainerEntityManagerFactoryBean entityManagerFactory(DataSource dataSource) {
-        logger.info("Using cloud entityManagerFactory");
+        log.info("Using cloud entityManagerFactory");
         LocalContainerEntityManagerFactoryBean entityManagerFactoryBean = new LocalContainerEntityManagerFactoryBean();
         entityManagerFactoryBean.setDataSource(dataSource);
         entityManagerFactoryBean.setPersistenceUnitName("tradekraftPersistenceUnit");
@@ -40,7 +40,7 @@ public class CloudConfig {
 
     @Bean
     JpaTransactionManager transactionManager(EntityManagerFactory entityManagerFactory) {
-        logger.info("Using cloud TransactionManager");
+        log.info("Using cloud TransactionManager");
         return new JpaTransactionManager(entityManagerFactory);
     }
 }

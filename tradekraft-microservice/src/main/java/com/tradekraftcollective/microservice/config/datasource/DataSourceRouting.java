@@ -1,7 +1,6 @@
 package com.tradekraftcollective.microservice.config.datasource;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.datasource.TransactionAwareDataSourceProxy;
 import org.springframework.jdbc.datasource.lookup.AbstractRoutingDataSource;
 
@@ -14,9 +13,8 @@ import java.util.Map;
 /**
  * Created by brandonfeist on 9/3/17.
  */
+@Slf4j
 public class DataSourceRouting extends AbstractRoutingDataSource {
-    private static final Logger logger = LoggerFactory.getLogger(DataSourceRouting.class);
-
     private Map<String, TransactionAwareDataSourceProxy> dbUrlProxies = new HashMap<>();
     private final FinalDataSourceConfig finalDataSourceConfig;
 
@@ -27,7 +25,7 @@ public class DataSourceRouting extends AbstractRoutingDataSource {
     @Override
     public DataSource determineTargetDataSource() {
         String lookupKey = (String) this.determineCurrentLookupKey();
-        logger.debug("Determining DataSource");
+        log.debug("Determining DataSource");
 
         DataSourceConfig dataSourceConfig = finalDataSourceConfig.getDataSourceConfig();
         DataConnectionParams dataConnectionParams = dataSourceConfig.getDataConnectionParams();
@@ -78,7 +76,7 @@ public class DataSourceRouting extends AbstractRoutingDataSource {
     @Override
     public Connection getConnection() throws SQLException {
         Connection connection = this.determineTargetDataSource().getConnection();
-        logger.info("Connection being returned {}", connection);
+        log.info("Connection being returned {}", connection);
         return connection;
     }
 

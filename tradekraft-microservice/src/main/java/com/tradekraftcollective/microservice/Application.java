@@ -1,7 +1,6 @@
 package com.tradekraftcollective.microservice;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.boot.web.support.SpringBootServletInitializer;
@@ -14,16 +13,15 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 /**
  * Created by brandonfeist on 8/30/17.
  */
+@Slf4j
 @SpringBootApplication
 @Configuration
 @EnableTransactionManagement
 @EnableJpaRepositories
 @EnableJpaAuditing
 public class Application extends SpringBootServletInitializer {
-    private static final Logger logger = LoggerFactory.getLogger(Application.class);
-
     public static void main(String[] args) {
         new SpringApplicationBuilder(Application.class).run(args);
-        logger.info("Starting TradeKraft Micro-service");
+        log.info("Starting TradeKraft Micro-service");
     }
 }

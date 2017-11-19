@@ -1,8 +1,7 @@
 package com.tradekraftcollective.microservice.config.datasource;
 
 import lombok.Data;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -10,11 +9,10 @@ import org.springframework.stereotype.Component;
 /**
  * Created by brandonfeist on 9/4/17.
  */
+@Slf4j
 @Component
 @Data
 public class FinalDataSourceConfig {
-    private static final Logger logger = LoggerFactory.getLogger(FinalDataSourceConfig.class);
-
     private final String dataSourceDriverClassName;
     private final String dataSourceUrl;
     private final String dataSourceUsername;
@@ -35,7 +33,7 @@ public class FinalDataSourceConfig {
         String dbHost = (hostname == null || "null".equals(hostname)) ? host : hostname;
         this.dataSourceUrl = String.format("jdbc:postgresql://%s:%s/%s?ApplicationName=%s", dbHost, port, dbName, "public");
 
-        logger.info("Connecting to jdbc {}", this.dataSourceUrl);
+        log.info("Connecting to jdbc {}", this.dataSourceUrl);
         this.dataSourceUsername = dataSourceUsername;
         this.dataSourcePassword = dataSourcePassword;
         this.dataConnectionParams = dataConnectionParams;
