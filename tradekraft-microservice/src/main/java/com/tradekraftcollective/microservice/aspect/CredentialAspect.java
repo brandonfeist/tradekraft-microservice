@@ -1,6 +1,6 @@
 package com.tradekraftcollective.microservice.aspect;
 
-import com.tradekraftcollective.microservice.Credentials;
+import com.tradekraftcollective.microservice.model.Credentials;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Before;

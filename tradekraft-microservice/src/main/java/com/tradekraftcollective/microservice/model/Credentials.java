@@ -1,4 +1,4 @@
-package com.tradekraftcollective.microservice;
+package com.tradekraftcollective.microservice.model;
 
 import com.tradekraftcollective.microservice.utilities.OAuthTokenUtil;
 import lombok.Getter;

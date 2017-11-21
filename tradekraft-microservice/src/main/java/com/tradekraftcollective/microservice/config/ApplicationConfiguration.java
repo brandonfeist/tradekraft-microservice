@@ -1,7 +1,7 @@
 package com.tradekraftcollective.microservice.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.tradekraftcollective.microservice.Credentials;
+import com.tradekraftcollective.microservice.model.Credentials;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.context.annotation.Bean;
