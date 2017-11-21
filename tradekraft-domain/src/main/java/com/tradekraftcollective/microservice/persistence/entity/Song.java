@@ -70,7 +70,7 @@ public class Song {
     @JoinColumn(name = "genre_id")
     private Genre genre;
 
-    @Column(name = "slug")
+    @Column(name = "slug", unique = true)
     private String slug;
 
     @Column(name = "created_at", nullable = false)

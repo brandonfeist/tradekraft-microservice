@@ -90,7 +90,7 @@ public class Event {
     @Column(name = "official_tk_event", nullable = false)
     private boolean officialEvent;
 
-    @Column(name = "slug")
+    @Column(name = "slug", unique = true)
     private String slug;
 
     @Column(name = "created_at", nullable = false)

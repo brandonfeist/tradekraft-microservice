@@ -67,7 +67,7 @@ public class Artist {
     @Column(name = "spotify")
     private String spotify;
 
-    @Column(name = "slug")
+    @Column(name = "slug", unique = true)
     private String slug;
 
     @Column(name = "created_at", nullable = false)

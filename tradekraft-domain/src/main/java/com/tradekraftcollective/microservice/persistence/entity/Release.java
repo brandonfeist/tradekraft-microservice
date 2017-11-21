@@ -78,7 +78,7 @@ public class Release {
     @JsonIgnoreProperties("release")
     private List<Song> songs;
 
-    @Column(name = "slug")
+    @Column(name = "slug", unique = true)
     private String slug;
 
     @Column(name = "created_at", nullable = false)
