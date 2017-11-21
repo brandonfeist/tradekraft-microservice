@@ -1,6 +1,7 @@
 package com.tradekraftcollective.microservice.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tradekraftcollective.microservice.Credentials;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.context.annotation.Bean;
@@ -33,4 +34,8 @@ public class ApplicationConfiguration {
     @Bean
     @Scope(value = "request", proxyMode = ScopedProxyMode.TARGET_CLASS)
     public StopWatch stopWatch() { return new StopWatch(); }
+
+    @Bean
+    @Scope(value = "request", proxyMode = ScopedProxyMode.TARGET_CLASS)
+    public Credentials credentials() { return new Credentials(); }
 }
