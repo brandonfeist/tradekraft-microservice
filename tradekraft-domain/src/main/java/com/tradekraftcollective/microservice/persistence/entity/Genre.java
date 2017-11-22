@@ -1,6 +1,7 @@
 package com.tradekraftcollective.microservice.persistence.entity;
 
 import lombok.Data;
+import org.hibernate.validator.constraints.NotBlank;
 
 import javax.persistence.*;
 import java.util.Date;
@@ -16,7 +17,8 @@ public class Genre {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "name", nullable = false)
+    @NotBlank
+    @Column(name = "name", nullable = false, unique = true)
     private String name;
 
     @Column(name = "color", nullable = false)

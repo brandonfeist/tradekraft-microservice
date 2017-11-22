@@ -22,22 +22,21 @@ public class GenreValidator {
     IGenreRepository genreRepository;
 
     public void validateGenre(Genre genre) {
-        validateGenreName(genre);
         validateGenreColor(genre);
     }
 
-    private void validateGenreName(Genre genre) {
-        if(genre.getName() == null || genre.getName().isEmpty()) {
-            log.error("Missing genre name.");
-            throw new ServiceException(ErrorCode.INVALID_GENRE_NAME, "genre name must be present.");
-        }
-
-        Genre validationGenre = genreRepository.findByName(genre.getName());
-        if(validationGenre != null && !validationGenre.getId().equals(genre.getId())) {
-            log.error("Genre with name: {} already exists", genre.getName());
-            throw new ServiceException(ErrorCode.INVALID_GENRE_NAME, "genre with name [" + genre.getName() + "] already exists.");
-        }
-    }
+//    private void validateGenreName(Genre genre) {
+//        if(genre.getName() == null || genre.getName().isEmpty()) {
+//            log.error("Missing genre name.");
+//            throw new ServiceException(ErrorCode.INVALID_GENRE_NAME, "genre name must be present.");
+//        }
+//
+//        Genre validationGenre = genreRepository.findByName(genre.getName());
+//        if(validationGenre != null && !validationGenre.getId().equals(genre.getId())) {
+//            log.error("Genre with name: {} already exists", genre.getName());
+//            throw new ServiceException(ErrorCode.INVALID_GENRE_NAME, "genre with name [" + genre.getName() + "] already exists.");
+//        }
+//    }
 
     private void validateGenreColor(Genre genre) {
         if(genre.getColor() == null || genre.getColor().isEmpty()) {

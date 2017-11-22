@@ -47,17 +47,9 @@ public class SongValidator {
             throw new ServiceException(ErrorCode.INVALID_SONG_FILE, "song file with matching file name must be present.");
         }
 
-        validateSongName(song);
         validateIfGenreExists(song);
         validateIfArtistExists(song);
         validateSongFile(songFile);
-    }
-
-    private void validateSongName(Song song) {
-        if(song.getName() == null || song.getName().isEmpty()) {
-            log.error("Missing song name.");
-            throw new ServiceException(ErrorCode.INVALID_SONG_NAME, "song name must be present.");
-        }
     }
 
     private void validateIfGenreExists(Song song) {

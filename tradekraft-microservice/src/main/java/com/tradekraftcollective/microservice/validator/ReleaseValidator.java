@@ -34,7 +34,6 @@ public class ReleaseValidator {
     };
 
     public void validateRelease(Release release, MultipartFile image, MultipartFile[] songFiles) {
-        validateReleaseName(release);
         validateReleaseType(release);
         validateReleaseLinks(release);
         validateReleaseImage(image);
@@ -45,13 +44,6 @@ public class ReleaseValidator {
         if(releaseRepository.findBySlug(releaseSlug) == null) {
             log.error("Release with slug [{}] does not exist", releaseSlug);
             throw new ServiceException(ErrorCode.INVALID_RELEASE_SLUG, "Release with slug [" + releaseSlug + "] does not exist");
-        }
-    }
-
-    private void validateReleaseName(Release release) {
-        if(release.getName() == null || release.getName().isEmpty()) {
-            log.error("Missing release name.");
-            throw new ServiceException(ErrorCode.INVALID_RELEASE_NAME, "release name must be present.");
         }
     }
 

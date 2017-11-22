@@ -30,7 +30,6 @@ public class EventValidator {
     ImageValidationUtil imageValidationUtil;
 
     public void validateEvent(Event event, MultipartFile image) {
-        validateEventName(event);
         validateEventEntryAge(event);
         validateEventStartAndEndDate(event);
         validateEventVenueName(event);
@@ -39,7 +38,6 @@ public class EventValidator {
     }
 
     public void validateEvent(Event event) {
-        validateEventName(event);
         validateEventEntryAge(event);
         validateEventStartAndEndDate(event);
         validateEventVenueName(event);
@@ -50,13 +48,6 @@ public class EventValidator {
         if(eventRepository.findBySlug(eventSlug) == null) {
             log.error("Event with slug [{}] does not exist", eventSlug);
             throw new ServiceException(ErrorCode.INVALID_EVENT_SLUG, "Event with slug [" + eventSlug + "] does not exist");
-        }
-    }
-
-    private void validateEventName(Event event) {
-        if(event.getName() == null || event.getName().isEmpty()) {
-            log.error("Missing event name.");
-            throw new ServiceException(ErrorCode.INVALID_EVENT_NAME, "event name must be present.");
         }
     }
 

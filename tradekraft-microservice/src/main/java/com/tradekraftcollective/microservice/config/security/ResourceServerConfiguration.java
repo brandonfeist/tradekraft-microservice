@@ -29,9 +29,9 @@ public class ResourceServerConfiguration extends ResourceServerConfigurerAdapter
         http
             .authorizeRequests()
             .antMatchers(HttpMethod.GET, "/**").permitAll()
+//            .antMatchers(HttpMethod.GET, "/v1/artists/**").hasAuthority("ARTIST_WRITE_PERMISSION")
             .anyRequest().authenticated()
             .and().sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS);
-//            .and().csrf().disable();
     }
 
     @Bean

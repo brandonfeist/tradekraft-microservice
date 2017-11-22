@@ -33,13 +33,11 @@ public class ArtistValidator {
     ImageValidationUtil imageValidationUtil;
 
     public void validateArtist(Artist artist, MultipartFile image) {
-        validateArtistName(artist);
         validateArtistLinks(artist);
         validateArtistImage(image);
     }
 
     public void validateArtist(Artist artist) {
-        validateArtistName(artist);
         validateArtistLinks(artist);
     }
 
@@ -47,13 +45,6 @@ public class ArtistValidator {
         if(artistRepository.findBySlug(artistSlug) == null) {
             log.error("Artist with slug [{}] does not exist", artistSlug);
             throw new ServiceException(ErrorCode.INVALID_ARTIST_SLUG, "Artist with slug [" + artistSlug + "] does not exist");
-        }
-    }
-
-    private void validateArtistName(Artist artist) {
-        if(artist.getName() == null || artist.getName().isEmpty()) {
-            log.error("Missing artist name.");
-            throw new ServiceException(ErrorCode.INVALID_ARTIST_NAME, "artist name must be present.");
         }
     }
 
