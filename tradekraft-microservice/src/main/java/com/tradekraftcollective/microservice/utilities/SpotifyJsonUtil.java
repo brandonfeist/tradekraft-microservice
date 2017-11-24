@@ -6,9 +6,7 @@ import net.sf.json.JSONArray;
 import net.sf.json.JSONNull;
 import net.sf.json.JSONObject;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class SpotifyJsonUtil {
     public static SpotifyClientCredentials createApplicationAuthenticationToken(JSONObject jsonObject) {
