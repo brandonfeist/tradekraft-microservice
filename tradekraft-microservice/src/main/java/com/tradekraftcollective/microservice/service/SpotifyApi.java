@@ -3,6 +3,7 @@ package com.tradekraftcollective.microservice.service;
 import com.tradekraftcollective.microservice.service.impl.HttpManager;
 import com.tradekraftcollective.microservice.utilities.UtilProtos.Url.Scheme;
 import com.tradekraftcollective.microservice.utilities.apiRequests.AbstractRequest;
+import com.tradekraftcollective.microservice.utilities.apiRequests.SpotifyAlbumRequest;
 import com.tradekraftcollective.microservice.utilities.apiRequests.authentication.SpotifyAuthorizationCodeGrantRequest;
 import com.tradekraftcollective.microservice.utilities.apiRequests.authentication.SpotifyClientCredentialsGrantRequest;
 import com.tradekraftcollective.microservice.utilities.apiRequests.authentication.SpotifyRefreshAccessTokenRequest;
@@ -94,6 +95,13 @@ public class SpotifyApi {
         builder.grantType("refresh_token");
         builder.refreshToken(refreshToken);
         builder.basicAuthorizationHeader(clientId, clientSecret);
+        return builder;
+    }
+
+    public SpotifyAlbumRequest.Builder getAlbum(String id) {
+        SpotifyAlbumRequest.Builder builder = SpotifyAlbumRequest.builder();
+        setDefaults(builder);
+        builder.id(id);
         return builder;
     }
 

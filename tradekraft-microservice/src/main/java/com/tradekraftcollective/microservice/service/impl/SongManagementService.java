@@ -3,6 +3,9 @@ package com.tradekraftcollective.microservice.service.impl;
 import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.github.slugify.Slugify;
+import com.tradekraftcollective.microservice.model.Credentials;
+import com.tradekraftcollective.microservice.model.spotify.SpotifyAlbum;
+import com.tradekraftcollective.microservice.model.spotify.SpotifySimpleTrack;
 import com.tradekraftcollective.microservice.persistence.entity.Artist;
 import com.tradekraftcollective.microservice.persistence.entity.Release;
 import com.tradekraftcollective.microservice.persistence.entity.Song;
@@ -11,7 +14,9 @@ import com.tradekraftcollective.microservice.repository.IGenreRepository;
 import com.tradekraftcollective.microservice.repository.ISongRepository;
 import com.tradekraftcollective.microservice.service.AmazonS3Service;
 import com.tradekraftcollective.microservice.service.ISongManagementService;
+import com.tradekraftcollective.microservice.service.ISpotifyManagementService;
 import com.tradekraftcollective.microservice.utilities.AudioProcessingUtil;
+import com.tradekraftcollective.microservice.utilities.SpotifyUrlUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -37,10 +42,19 @@ public class SongManagementService implements ISongManagementService {
     IArtistRepository artistRepository;
 
     @Inject
+    ISpotifyManagementService spotifyManagementService;
+
+    @Inject
+    SpotifyUrlUtil spotifyUrlUtil;
+
+    @Inject
     AudioProcessingUtil audioProcessingUtil;
 
     @Inject
     AmazonS3Service amazonS3Service;
+
+    @Inject
+    Credentials credentials;
 
     @Override
     public Song createSong(Release release, Song song, MultipartFile songFile) {
@@ -82,6 +96,67 @@ public class SongManagementService implements ISongManagementService {
         }
 
         return songFileHashMap;
+    }
+
+    @Override
+    public List<Song> songLinkAuthorization(Release release) {
+        List<Song> songs = release.getSongs();
+
+        if((credentials.getAuthorization() == null || !credentials.hasPermission("PREMIUM_MUSIC_PERMISSION"))
+                && !release.isFreeRelease()) {
+            log.info("User does not have access to premium songs...");
+
+            List<Song> editedSongList;
+
+            editedSongList = removeSongFileLinks(release.getSongs());
+
+            SpotifyAlbum spotifyAlbum = null;
+            if(release.getSpotify() != null) {
+                spotifyAlbum = spotifyManagementService.getSpotifyAlbumInformation(spotifyUrlUtil.getAlbumId(release.getSpotify()));
+            }
+
+            if(release.getSpotify() != null && spotifyAlbum != null) {
+                log.info("Retrieving Spotify song preview mp3 links.");
+
+                List<SpotifySimpleTrack> spotifyTracks = spotifyAlbum.getTracks().getItems();
+
+                for(int songIndex = 0; songIndex < songs.size(); songIndex++) {
+                    editedSongList = changeSongFileToExternalSpotifyLinks(release.getSongs(), spotifyTracks);
+                }
+            }
+
+            return editedSongList;
+        }
+
+        // Also make null if song is not released yet?
+        // This goes into a whole other issue of gold early release permissions,
+        // For example can certain users get permission to hear the song early?
+
+        return songs;
+    }
+
+    private List<Song> removeSongFileLinks(List<Song> songs) {
+        List<Song> editedSongs = new ArrayList<>();
+        for (Song song : songs) {
+            song.setSongFile(null);
+            editedSongs.add(song);
+        }
+
+        return editedSongs;
+    }
+
+    private List<Song> changeSongFileToExternalSpotifyLinks(List<Song> songs, List<SpotifySimpleTrack> spotifyTracks) {
+        List<Song> editedSongs = new ArrayList<>();
+
+        for(int songIndex = 0; songIndex < songs.size(); songIndex++) {
+            Song songToEdit = songs.get(songIndex);
+
+            songToEdit.setSongFile(spotifyTracks.get(songIndex).getPreviewUrl());
+
+            editedSongs.add(songToEdit);
+        }
+
+        return editedSongs;
     }
 
     private String createSongSlug(String songName) {

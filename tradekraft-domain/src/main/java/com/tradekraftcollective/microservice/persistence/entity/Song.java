@@ -92,13 +92,19 @@ public class Song {
         ObjectMapper objectMapper = new ObjectMapper();
         ObjectNode objectNode = objectMapper.createObjectNode();
 
-        for (AudioFormat audioFormat : getAudioFormats()) {
-            if (audioFormat.getFileName().equals("original")) {
-                objectNode.put(audioFormat.getExtension(),
-                        (SONG_AWS_URL + slug + "/" + songFile + "." + audioFormat.getExtension()));
+        if(songFile != null) {
+            if(songFile.startsWith("http") || songFile.startsWith("https")) {
+                objectNode.put("external", songFile);
             } else {
-                objectNode.put(audioFormat.getExtension(),
-                        (SONG_AWS_URL + slug + "/" + audioFormat.getFileName() + "_" + songFile + "." + audioFormat.getExtension()));
+                for (AudioFormat audioFormat : getAudioFormats()) {
+                    if (audioFormat.getFileName().equals("original")) {
+                        objectNode.put(audioFormat.getExtension(),
+                                (SONG_AWS_URL + slug + "/" + songFile + "." + audioFormat.getExtension()));
+                    } else {
+                        objectNode.put(audioFormat.getExtension(),
+                                (SONG_AWS_URL + slug + "/" + audioFormat.getFileName() + "_" + songFile + "." + audioFormat.getExtension()));
+                    }
+                }
             }
         }
 

@@ -3,6 +3,7 @@ package com.tradekraftcollective.microservice.utilities;
 import com.google.common.collect.ImmutableMap;
 import com.tradekraftcollective.microservice.utilities.UtilProtos.Url.Scheme;
 import org.apache.http.client.utils.URIBuilder;
+import org.springframework.stereotype.Component;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
@@ -13,6 +14,7 @@ import java.util.Map;
 /**
  * Created by brandonfeist on 11/16/17.
  */
+@Component
 public class UrlUtil {
     private final static Map<Scheme, String> SCHEME_NAMES =
             new ImmutableMap.Builder<Scheme, String>()

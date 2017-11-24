@@ -70,6 +70,8 @@ public class ReleaseManagementService implements IReleaseManagementService {
 
         Release release = releaseRepository.findBySlug(releaseSlug);
 
+        release.setSongs(songManagementService.songLinkAuthorization(release));
+
         return release;
     }
 

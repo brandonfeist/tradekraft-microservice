@@ -2,7 +2,9 @@ package com.tradekraftcollective.microservice.utilities.apiRequests.authenticati
 
 import com.google.common.base.Joiner;
 import com.tradekraftcollective.microservice.exception.WebApiException;
+import com.tradekraftcollective.microservice.model.spotify.SpotifyClientCredentials;
 import com.tradekraftcollective.microservice.service.SpotifyApi;
+import com.tradekraftcollective.microservice.utilities.SpotifyJsonUtil;
 import com.tradekraftcollective.microservice.utilities.apiRequests.AbstractRequest;
 import net.sf.json.JSONObject;
 import org.apache.commons.codec.binary.Base64;
@@ -22,9 +24,9 @@ public class SpotifyClientCredentialsGrantRequest extends AbstractRequest {
         return new Builder();
     }
 
-    public JSONObject get() throws IOException, WebApiException {
+    public SpotifyClientCredentials get() throws IOException, WebApiException {
         JSONObject jsonObject = JSONObject.fromObject(postJson());
-        return jsonObject;
+        return SpotifyJsonUtil.createApplicationAuthenticationToken(jsonObject);
     }
 
     public static final class Builder extends AbstractRequest.Builder<Builder> {

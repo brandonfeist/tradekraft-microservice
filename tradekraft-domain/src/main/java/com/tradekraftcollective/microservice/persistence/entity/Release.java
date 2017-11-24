@@ -80,6 +80,9 @@ public class Release {
     @JsonIgnoreProperties("release")
     private List<Song> songs;
 
+    @Column(name = "free_release", nullable = false)
+    private boolean freeRelease;
+
     @Column(name = "slug", unique = true)
     private String slug;
 
