@@ -50,7 +50,7 @@ public class SpotifyManagementController {
     @RequestMapping(value = "/authorize/refresh", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> refreshSpotifyToken(
             @RequestParam(value = "refresh_token") String refreshToken,
-            @RequestHeader(value = "Authorization") String authorization,
+            @RequestHeader(value = "Spotify-Authorization") String authorization,
             @RequestHeader(value = "X-Request-ID", required = false) String xRequestId
     ) {
         log.info("refreshSpotifyToken [{}]", xRequestId);
