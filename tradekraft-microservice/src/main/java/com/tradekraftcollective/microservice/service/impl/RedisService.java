@@ -3,39 +3,31 @@ package com.tradekraftcollective.microservice.service.impl;
 import com.tradekraftcollective.microservice.model.spotify.SpotifyClientCredentials;
 import com.tradekraftcollective.microservice.service.CacheService;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.redis.core.ListOperations;
-import org.springframework.data.redis.core.RedisOperations;
+import org.springframework.data.redis.core.BoundValueOperations;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
-import java.time.ZonedDateTime;
-import java.time.temporal.ChronoUnit;
-import java.util.Date;
-import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Service("cacheService")
 public class RedisService implements CacheService {
     @Resource(name = "redisTemplate")
-    private ListOperations<String, SpotifyClientCredentials> spotifyTokenList;
-
-    @Resource(name = "redisTemplate")
-    private RedisOperations<String, String> spotifyTokenExpiration;
+    private RedisTemplate<String, SpotifyClientCredentials> spotifyTokenTemplate;
 
 
     @Override
     public void saveSpotifyToken(SpotifyClientCredentials token) {
         log.info("Saving spotify client access token to redis.");
 
-        spotifyTokenList.leftPush("spotifyToken", token);
-
-        ZonedDateTime zonedDateTime = ZonedDateTime.now();
-        Date date = Date.from(zonedDateTime.plus(token.getExpiresIn() - 5, ChronoUnit.MINUTES).toInstant());
-        spotifyTokenExpiration.expireAt("spotifyToken", date);
+        BoundValueOperations<String, SpotifyClientCredentials> boundValueOperations =
+                spotifyTokenTemplate.boundValueOps("spotify-client-token");
+        boundValueOperations.set(token, (token.getExpiresIn() - 10), TimeUnit.SECONDS);
     }
 
     @Override
-    public List<SpotifyClientCredentials> getSpotifyToken() {
-        return spotifyTokenList.range("spotifyToken", 0, -1);
+    public SpotifyClientCredentials getSpotifyToken() {
+        return spotifyTokenTemplate.boundValueOps("spotify-client-token").get();
     }
 }

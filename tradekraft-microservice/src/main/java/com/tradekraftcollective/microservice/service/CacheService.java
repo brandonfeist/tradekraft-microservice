@@ -7,5 +7,5 @@ import java.util.List;
 public interface CacheService {
     public void saveSpotifyToken(SpotifyClientCredentials token);
 
-    public List<SpotifyClientCredentials> getSpotifyToken();
+    public SpotifyClientCredentials getSpotifyToken();
 }

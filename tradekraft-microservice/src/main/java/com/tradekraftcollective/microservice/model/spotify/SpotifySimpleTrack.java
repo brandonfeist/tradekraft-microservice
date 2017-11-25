@@ -1,11 +1,13 @@
 package com.tradekraftcollective.microservice.model.spotify;
 
 import lombok.Data;
+import org.springframework.data.redis.serializer.JdkSerializationRedisSerializer;
 
+import java.io.Serializable;
 import java.util.List;
 
 @Data
-public class SpotifySimpleTrack {
+public class SpotifySimpleTrack extends JdkSerializationRedisSerializer implements Serializable {
     private List<SpotifySimpleArtist> artists;
 
     private List<String> availableMarkets;

@@ -54,9 +54,8 @@ public class SpotifyManagementService implements ISpotifyManagementService {
         return requestJsonObject;
     }
 
-    @Cacheable(value = "spotify-client-token")
     private SpotifyClientCredentials getSpotifyClientAuthorizationToken() {
-        if(cacheService.getSpotifyToken().size() < 1) {
+        if(cacheService.getSpotifyToken() == null) {
             log.info("Retrieving Spotify authorization for client.");
 
             final SpotifyApi api = SpotifyApi.builder()
@@ -74,7 +73,7 @@ public class SpotifyManagementService implements ISpotifyManagementService {
                 log.error(e.toString());
             }
         } else {
-            return cacheService.getSpotifyToken().get(0);
+            return cacheService.getSpotifyToken();
         }
 
         return null;
@@ -102,6 +101,7 @@ public class SpotifyManagementService implements ISpotifyManagementService {
     }
 
     @Override
+    @Cacheable(value = "spotify-album", key = "#albumId")
     public SpotifyAlbum getSpotifyAlbumInformation(String albumId) {
         log.info("Getting Spotify album with ID: [{}]", albumId);
 
