@@ -29,9 +29,7 @@ public class ResourceServerConfiguration extends ResourceServerConfigurerAdapter
         http
             .authorizeRequests()
             .antMatchers(HttpMethod.GET, "/**").permitAll()
-            .antMatchers(HttpMethod.OPTIONS, "/v1/spotify/**").permitAll()
-            .antMatchers(HttpMethod.GET, "/v1/spotify/**").permitAll()
-//            .antMatchers(HttpMethod.GET, "/v1/artists/**").hasAuthority("ARTIST_WRITE_PERMISSION")
+//            .antMatchers(HttpMethod.GET, "/v1/artists/**").hasAuthority(ARTIST_WRITE_PERMISSION")
             .anyRequest().authenticated()
             .and().sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS);
     }
