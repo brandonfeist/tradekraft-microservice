@@ -9,7 +9,9 @@ import com.tradekraftcollective.microservice.constants.PatchOperationConstants;
 import com.tradekraftcollective.microservice.exception.ErrorCode;
 import com.tradekraftcollective.microservice.exception.ServiceException;
 import com.tradekraftcollective.microservice.persistence.entity.Artist;
+import com.tradekraftcollective.microservice.persistence.entity.Year;
 import com.tradekraftcollective.microservice.repository.IArtistRepository;
+import com.tradekraftcollective.microservice.repository.IYearRepository;
 import com.tradekraftcollective.microservice.service.AmazonS3Service;
 import com.tradekraftcollective.microservice.service.IArtistManagementService;
 import com.tradekraftcollective.microservice.service.IArtistPatchService;
@@ -17,6 +19,7 @@ import com.tradekraftcollective.microservice.utilities.ImageProcessingUtil;
 import com.tradekraftcollective.microservice.validator.ArtistValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,6 +27,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.inject.Inject;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -38,6 +42,9 @@ public class ArtistManagementService implements IArtistManagementService {
 
     @Inject
     IArtistRepository artistRepository;
+
+    @Autowired
+    IYearRepository yearRepository;
 
     @Inject
     ArtistValidator artistValidator;
@@ -65,19 +72,13 @@ public class ArtistManagementService implements IArtistManagementService {
 
         PageRequest request = new PageRequest(page, pageSize, order, sortField);
 
-        // Validate if year exists so odd numbers aren't passed in, also validate if integer
-        if(artistQuery != null) {
-            Artist dummyArtist = new Artist();
-            dummyArtist.setName(artistQuery);
-
-            ExampleMatcher matcher = ExampleMatcher.matching()
-                    .withMatcher("name",  match -> match.contains().ignoreCase())
-                    .withIgnoreNullValues()
-                    .withIgnorePaths("id", "description", "image", "soundcloud", "facebook", "twitter", "instagram", "spotify", "slug", "createdAt", "updatedAt", "events");
-
-            Example<Artist> exampleArtist = Example.of(dummyArtist, matcher);
-
-            return  artistRepository.findAll(exampleArtist, request);
+        Year year = yearRepository.findByYear(yearQuery);
+        if(artistQuery != null && year != null) {
+            return artistRepository.findByNameContainingIgnoreCaseAndYearsActive(artistQuery, year, request);
+        } else if(artistQuery != null && year == null) {
+            return artistRepository.findByNameContainingIgnoreCase(artistQuery, request);
+        } else if(artistQuery == null && year != null) {
+            return artistRepository.findByYearsActive(year, request);
         }
 
         return artistRepository.findAll(request);

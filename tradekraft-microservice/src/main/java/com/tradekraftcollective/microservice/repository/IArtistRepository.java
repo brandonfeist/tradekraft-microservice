@@ -1,6 +1,7 @@
 package com.tradekraftcollective.microservice.repository;
 
 import com.tradekraftcollective.microservice.persistence.entity.Artist;
+import com.tradekraftcollective.microservice.persistence.entity.Year;
 import org.springframework.data.domain.Example;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -18,6 +19,12 @@ import java.util.List;
  */
 public interface IArtistRepository extends JpaRepository<Artist, Long> {
     Artist findBySlug(@Param("slug") String slug);
+
+    Page<Artist> findByNameContainingIgnoreCase(@Param("name") String name, Pageable request);
+
+    Page<Artist> findByYearsActive(@Param("year") Year year, Pageable request);
+
+    Page<Artist> findByNameContainingIgnoreCaseAndYearsActive(@Param("name") String name, @Param("year") Year year, Pageable request);
 
     List<Artist> findBySlugStartingWith(@Param("slug") String slug);
 

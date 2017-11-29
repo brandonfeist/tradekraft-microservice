@@ -43,7 +43,7 @@ public class ArtistManagementController {
             @RequestParam(value = "sortOrder", defaultValue = SORT_ORDER_DESC, required = false) String sortOrder,
             @RequestHeader(value = "X-Request-ID", required = false) String xRequestId
     ) {
-        log.info("getArtists [{}]", xRequestId);
+        log.info("getArtists [{}], year [{}]", xRequestId, yearQuery);
 
         Page<Artist> artists = artistManagementService.getArtists(page, pageSize, sortField, sortOrder, artistQuery, yearQuery);
 

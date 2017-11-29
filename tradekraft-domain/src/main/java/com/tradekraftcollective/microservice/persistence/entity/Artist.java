@@ -87,6 +87,12 @@ public class Artist {
     @JsonIgnoreProperties("artists")
     private List<Event> events;
 
+    @JoinTable(name = "artist_years",
+            joinColumns = @JoinColumn(name = "artist_id", referencedColumnName = "id"),
+            inverseJoinColumns = @JoinColumn(name = "year_id", referencedColumnName = "id"))
+    @OrderBy("year DESC")
+    private List<Year> yearsActive;
+
     public JsonNode getReleases() {
         ObjectMapper objectMapper = new ObjectMapper();
         ObjectNode objectNode = objectMapper.createObjectNode();
