@@ -193,12 +193,13 @@ public class Artist {
                 Objects.equals(twitter, artist.twitter) &&
                 Objects.equals(spotify, artist.spotify) &&
                 Objects.equals(slug, artist.slug) &&
-                Objects.equals(events, artist.events);
+                Objects.equals(events, artist.events) &&
+                Objects.equals(yearsActive, artist.yearsActive);
     }
 
     @Override
     public int hashCode() {
         return Objects.hash(id, name, description, image, soundcloud, facebook,
-                instagram, twitter, spotify, slug, events);
+                instagram, twitter, spotify, slug, events, yearsActive);
     }
 }

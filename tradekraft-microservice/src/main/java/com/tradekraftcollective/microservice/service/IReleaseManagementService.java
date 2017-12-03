@@ -9,7 +9,7 @@ import org.springframework.web.multipart.MultipartFile;
  */
 public interface IReleaseManagementService {
 
-    Page<Release> getReleases (int page, int pageSize, String sortField, String sortOrder);
+    Page<Release> getReleases (int page, int pageSize, String sortField, String sortOrder, String searchQuery, String genreQuery, String typeQuery);
 
     Release getRelease(String releaseSlug);
 

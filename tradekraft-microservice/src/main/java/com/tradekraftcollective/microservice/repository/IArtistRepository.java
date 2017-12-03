@@ -20,11 +20,13 @@ import java.util.List;
 public interface IArtistRepository extends JpaRepository<Artist, Long> {
     Artist findBySlug(@Param("slug") String slug);
 
+    List<Artist> findByNameContainingIgnoreCase(@Param("name") String name);
+
     Page<Artist> findByNameContainingIgnoreCase(@Param("name") String name, Pageable request);
 
     Page<Artist> findByYearsActive(@Param("year") Year year, Pageable request);
 
-    Page<Artist> findByNameContainingIgnoreCaseAndYearsActive(@Param("name") String name, @Param("year") Year year, Pageable request);
+    Page<Artist> findByNameContainingIgnoreCaseAndYearsActive(@Param("name") String name, @Param("yearsActive") Year year, Pageable request);
 
     List<Artist> findBySlugStartingWith(@Param("slug") String slug);
 

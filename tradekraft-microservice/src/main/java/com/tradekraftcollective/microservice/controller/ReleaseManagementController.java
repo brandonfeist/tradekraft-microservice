@@ -29,15 +29,19 @@ public class ReleaseManagementController {
 
     @RequestMapping(method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> getReleases(
+            @RequestParam(value = "search", required = false) String searchQuery,
+            @RequestParam(value = "genre", required = false) String genreQuery,
+            @RequestParam(value = "type", required = false) String typeQuery,
             @RequestParam(value = "page", defaultValue = DEFAULT_PAGE_NUM, required = false) Integer page,
             @RequestParam(value = "pageSize", defaultValue = DEFAULT_PAGE_SIZE, required = false) Integer pageSize,
             @RequestParam(value = "sortField", defaultValue = SORT_FIELD_NAME, required = false) String sortField,
             @RequestParam(value = "sortOrder", defaultValue = SORT_ORDER_DESC, required = false) String sortOrder,
             @RequestHeader(value = "X-Request-ID", required = false) String xRequestId
     ) {
-        log.info("getReleases [{}]", xRequestId);
+        log.info("getReleases [{}], searchQuery [{}], genreQuery [{}], typeQuery [{}]", xRequestId, searchQuery, genreQuery, typeQuery);
 
-        Page<Release> releases = releaseManagementService.getReleases(page, pageSize, sortField, sortOrder);
+        Page<Release> releases = releaseManagementService.getReleases(page, pageSize, sortField, sortOrder,
+                searchQuery, genreQuery, typeQuery);
 
         return new ResponseEntity<>(releases, HttpStatus.OK);
     }
