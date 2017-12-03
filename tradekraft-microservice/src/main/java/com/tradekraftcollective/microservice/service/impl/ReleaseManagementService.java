@@ -71,37 +71,7 @@ public class ReleaseManagementService implements IReleaseManagementService {
 
         PageRequest request = new PageRequest(page, pageSize, order, sortField);
 
-        Specification<Release> result = null;
-        if(searchQuery != null) {
-            log.info("Getting specs for searchQuery [{}]", searchQuery);
-
-            ReleaseSpecification spec1 =
-                    new ReleaseSpecification(new SearchCriteria("name", ":", searchQuery));
-            ReleaseSpecification spec2 =
-                    new ReleaseSpecification(new SearchCriteria("songs", "in",
-                            new SearchCriteria("artists", "in", "name," + searchQuery)));
-
-            result = Specifications.where(spec1).or(spec2);
-        }
-
-        if(genreQuery != null) {
-            log.info("Getting specs for genreQuery [{}]", genreQuery);
-
-            ReleaseSpecification genreSepc =
-                    new ReleaseSpecification(new SearchCriteria("songs", "in",
-                            new SearchCriteria("genre", "in", "name," + genreQuery)));
-
-            result = Specifications.where(result).and(genreSepc);
-        }
-
-        if(typeQuery != null) {
-            log.info("Getting specs for typQuery [{}]", typeQuery);
-
-            ReleaseSpecification typeSpec =
-                    new ReleaseSpecification(new SearchCriteria("releaseType", ":", typeQuery));
-
-            result = Specifications.where(result).and(typeSpec);
-        }
+        Specification<Release> result = getReleaseSpecs(searchQuery, genreQuery, typeQuery);
 
         if(result != null) {
             return releaseRepository.findAll(result, request);
@@ -183,5 +153,41 @@ public class ReleaseManagementService implements IReleaseManagementService {
 
         int duplicateSlugs = releaseRepository.findBySlugStartingWith(result).size();
         return duplicateSlugs > 0 ? result.concat("-" + (duplicateSlugs + 1)) : result;
+    }
+
+    private Specification<Release> getReleaseSpecs(String searchQuery, String genreQuery, String typeQuery) {
+        Specification<Release> result = null;
+        if(searchQuery != null) {
+            log.info("Getting specs for searchQuery [{}]", searchQuery);
+
+            ReleaseSpecification spec1 =
+                    new ReleaseSpecification(new SearchCriteria("name", ":", searchQuery));
+            ReleaseSpecification spec2 =
+                    new ReleaseSpecification(new SearchCriteria("songs", "in",
+                            new SearchCriteria("artists", "in", "name," + searchQuery)));
+
+            result = Specifications.where(spec1).or(spec2);
+        }
+
+        if(genreQuery != null) {
+            log.info("Getting specs for genreQuery [{}]", genreQuery);
+
+            ReleaseSpecification genreSepc =
+                    new ReleaseSpecification(new SearchCriteria("songs", "in",
+                            new SearchCriteria("genre", "in", "name," + genreQuery)));
+
+            result = Specifications.where(result).and(genreSepc);
+        }
+
+        if(typeQuery != null) {
+            log.info("Getting specs for typQuery [{}]", typeQuery);
+
+            ReleaseSpecification typeSpec =
+                    new ReleaseSpecification(new SearchCriteria("releaseType", ":", typeQuery));
+
+            result = Specifications.where(result).and(typeSpec);
+        }
+
+        return result;
     }
 }
