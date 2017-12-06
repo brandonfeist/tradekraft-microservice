@@ -11,7 +11,7 @@ import java.util.List;
  * Created by brandonfeist on 9/28/17.
  */
 public interface IEventManagementService {
-    Page<Event> getEvents(int page, int pageSize, String sortField, String sortOrder);
+    Page<Event> getEvents(int page, int pageSize, String sortField, String sortOrder, boolean officialEventsOnly, boolean pastEvents);
 
     Event getEvent(String eventSlug);
 

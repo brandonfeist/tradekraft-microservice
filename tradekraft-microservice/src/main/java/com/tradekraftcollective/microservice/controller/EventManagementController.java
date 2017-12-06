@@ -36,11 +36,13 @@ public class EventManagementController {
             @RequestParam(value = "pageSize", defaultValue = DEFAULT_PAGE_SIZE, required = false) Integer pageSize,
             @RequestParam(value = "sortField", defaultValue = SORT_FIELD_NAME, required = false) String sortField,
             @RequestParam(value = "sortOrder", defaultValue = SORT_ORDER_DESC, required = false) String sortOrder,
+            @RequestParam(value = "officialEvents", defaultValue = "false", required = false) boolean officialEventsOnly,
+            @RequestParam(value = "pastEvents", defaultValue = "false", required = false) boolean pastEvents,
             @RequestHeader(value = "X-Request-ID", required = false) String xRequestId
     ) {
         log.info("getEvents [{}]", xRequestId);
 
-        Page<Event> events = eventManagementService.getEvents(page, pageSize, sortField, sortOrder);
+        Page<Event> events = eventManagementService.getEvents(page, pageSize, sortField, sortOrder, officialEventsOnly, pastEvents);
 
         return new ResponseEntity<>(events, HttpStatus.OK);
     }

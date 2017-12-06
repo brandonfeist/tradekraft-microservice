@@ -15,18 +15,23 @@ import com.tradekraftcollective.microservice.repository.IEventRepository;
 import com.tradekraftcollective.microservice.service.AmazonS3Service;
 import com.tradekraftcollective.microservice.service.IEventManagementService;
 import com.tradekraftcollective.microservice.service.IEventPatchService;
+import com.tradekraftcollective.microservice.specification.EventSpecification;
+import com.tradekraftcollective.microservice.specification.SearchCriteria;
 import com.tradekraftcollective.microservice.utilities.ImageProcessingUtil;
 import com.tradekraftcollective.microservice.validator.EventValidator;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.inject.Inject;
 import java.io.IOException;
+import java.sql.Timestamp;
 import java.util.*;
 
 /**
@@ -60,15 +65,21 @@ public class EventManagementService implements IEventManagementService {
     ObjectMapper objectMapper;
 
     @Override
-    public Page<Event> getEvents(int page, int pageSize, String sortField, String sortOrder) {
-        log.info("Fetching events, page: {} pageSize: {} sortField: {} sortOrder: {}", page, pageSize, sortField, sortOrder);
+    public Page<Event> getEvents(int page, int pageSize, String sortField, String sortOrder, boolean officialEventsOnly, boolean pastEvents) {
+        log.info("Fetching events, page: {} pageSize: {} sortField: {} sortOrder: {} officialEventsOnly: {} pastEvents: {}", page, pageSize, sortField, sortOrder, officialEventsOnly, pastEvents);
 
         Sort.Direction order = Sort.Direction.ASC;
         if(sortOrder != null && sortOrder.equalsIgnoreCase(DESCENDING)) {
             order = Sort.Direction.DESC;
         }
 
+        Specification<Event> result = getEventSpecs(officialEventsOnly, pastEvents);
+
         PageRequest request = new PageRequest(page, pageSize, order, sortField);
+
+        if(result != null) {
+            return eventRepository.findAll(result, request);
+        }
 
         return eventRepository.findAll(request);
     }
@@ -216,5 +227,29 @@ public class EventManagementService implements IEventManagementService {
         }
 
         return eventArtists;
+    }
+
+    private Specification<Event> getEventSpecs(boolean officialEventsOnly, boolean pastEvents) {
+        Specification<Event> result = null;
+
+        if(officialEventsOnly) {
+            log.info("Getting specs for officialEvents [{}]", officialEventsOnly);
+
+            EventSpecification officialEventSpec =
+                    new EventSpecification(new SearchCriteria("officialEvent", ":", officialEventsOnly));
+
+            result = Specifications.where(officialEventSpec);
+        }
+
+        if(pastEvents) {
+            log.info("Getting specs for pastEvents [{}]", pastEvents);
+
+            EventSpecification pastEventSpec =
+                    new EventSpecification(new SearchCriteria("startDateTime", "<", new Timestamp(System.currentTimeMillis())));
+
+            result = Specifications.where(result).and(pastEventSpec);
+        }
+
+        return result;
     }
 }

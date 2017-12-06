@@ -157,6 +157,7 @@ public class ReleaseManagementService implements IReleaseManagementService {
 
     private Specification<Release> getReleaseSpecs(String searchQuery, String genreQuery, String typeQuery) {
         Specification<Release> result = null;
+
         if(searchQuery != null) {
             log.info("Getting specs for searchQuery [{}]", searchQuery);
 
