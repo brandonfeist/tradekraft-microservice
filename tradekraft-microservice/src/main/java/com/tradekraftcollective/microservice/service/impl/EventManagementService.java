@@ -245,7 +245,14 @@ public class EventManagementService implements IEventManagementService {
             log.info("Getting specs for pastEvents [{}]", pastEvents);
 
             EventSpecification pastEventSpec =
-                    new EventSpecification(new SearchCriteria("startDateTime", "<", new Timestamp(System.currentTimeMillis())));
+                    new EventSpecification(new SearchCriteria("endDateTime", "<", new Timestamp(System.currentTimeMillis())));
+
+            result = Specifications.where(result).and(pastEventSpec);
+        } else {
+            log.info("Getting specs for futureEvents [{}]", pastEvents);
+
+            EventSpecification pastEventSpec =
+                    new EventSpecification(new SearchCriteria("endDateTime", ">=", new Timestamp(System.currentTimeMillis())));
 
             result = Specifications.where(result).and(pastEventSpec);
         }
