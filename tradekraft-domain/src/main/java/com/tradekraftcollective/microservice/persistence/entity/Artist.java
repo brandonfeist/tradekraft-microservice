@@ -11,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.persistence.*;
+import java.sql.Timestamp;
 import java.util.*;
 
 /**
@@ -92,6 +93,19 @@ public class Artist {
             inverseJoinColumns = @JoinColumn(name = "year_id", referencedColumnName = "id"))
     @OrderBy("year DESC")
     private List<Year> yearsActive;
+
+    public List<Event> getEvents() {
+        List<Event> eventsList = this.events;
+        Timestamp currentTimestamp = new Timestamp(System.currentTimeMillis());
+
+        for(int eventIndex = (eventsList.size() - 1); eventIndex >= 0; eventIndex--) {
+            if(currentTimestamp.compareTo(eventsList.get(eventIndex).getEndDateTime()) > 0) {
+                eventsList.remove(eventIndex);
+            }
+        }
+
+        return eventsList;
+    }
 
     public JsonNode getReleases() {
         ObjectMapper objectMapper = new ObjectMapper();
