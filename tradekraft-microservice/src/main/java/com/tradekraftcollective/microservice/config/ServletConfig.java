@@ -22,7 +22,7 @@ public class ServletConfig {
 
         final ServletRegistrationBean registration = new ServletRegistrationBean(dispatcherServlet);
         final String location = System.getProperty("java.io.tmpdir");
-        final long maxFileSize = 70000000;
+        final long maxFileSize = 500000000;
         final long maxRequestSize = 1000000000;
         final MultipartConfigElement multipartConfig  = new MultipartConfigElement(location, maxFileSize, maxRequestSize, 0);
         registration.setMultipartConfig(multipartConfig);

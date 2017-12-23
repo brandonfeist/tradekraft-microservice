@@ -35,6 +35,11 @@ public enum ErrorCode {
     INVALID_SONG_COUNT(HttpStatus.BAD_REQUEST.value(), "Invalid song count"),
     INVALID_SONG_FILE(HttpStatus.BAD_REQUEST.value(), "Invalid song file"),
 
+    INVALID_VIDEO(HttpStatus.BAD_REQUEST.value(), "Invalid video"),
+    INVALID_VIDEO_PREVIEW_TIME(HttpStatus.BAD_REQUEST.value(), "Invalid video preview time"),
+    INVALID_VIDEO_EXTERNAL_LINK(HttpStatus.BAD_REQUEST.value(), "Invalid external video link"),
+    INVALID_VIDEO_SLUG(HttpStatus.BAD_REQUEST.value(), "Invalid video slug"),
+
     INVALID_IMAGE_DEMINSIONS(HttpStatus.BAD_REQUEST.value(), "Invalid image dimensions"),
     INVALID_IMAGE_EXTENSION(HttpStatus.BAD_REQUEST.value(), "Invalid image extension"),
 
