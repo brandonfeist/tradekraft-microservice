@@ -80,10 +80,6 @@ public class Release {
     @JsonIgnoreProperties("release")
     private List<Song> songs;
 
-    @OneToMany(mappedBy = "release", cascade = CascadeType.ALL)
-    @JsonIgnoreProperties("release")
-    private List<Video> videos;
-
     @Column(name = "free_release", nullable = false)
     private boolean freeRelease;
 

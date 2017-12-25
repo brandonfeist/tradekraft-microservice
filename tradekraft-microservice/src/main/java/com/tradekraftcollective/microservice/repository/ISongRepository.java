@@ -11,4 +11,6 @@ import java.util.List;
  */
 public interface ISongRepository extends JpaRepository<Song, Long> {
     List<Song> findBySlugStartingWith(@Param("slug") String slug);
+
+    Song findBySlug(@Param("slug") String slug);
 }

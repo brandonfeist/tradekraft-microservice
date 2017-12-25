@@ -60,8 +60,12 @@ public class Song {
 
     @ManyToOne
     @JoinColumn(name = "release_id")
-    @JsonIgnore
+    @JsonIgnoreProperties({"image", "description", "releaseType", "releaseDate", "soundcloud", "spotify", "itunes", "appleMusic", "googlePlay", "amazon", "songs"})
     private Release release;
+
+    @OneToMany(mappedBy = "song", cascade = CascadeType.ALL)
+    @JsonIgnoreProperties("song")
+    private List<Video> videos;
 
     @NotEmpty
     @JoinTable(name = "artist_songs",

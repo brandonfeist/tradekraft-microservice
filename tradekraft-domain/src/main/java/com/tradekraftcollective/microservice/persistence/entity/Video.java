@@ -57,9 +57,9 @@ public class Video {
     private boolean featured;
 
     @ManyToOne
-    @JoinColumn(name = "release_id")
+    @JoinColumn(name = "song_id")
     @JsonIgnoreProperties("videos")
-    private Release release;
+    private Song song;
 
     @Column(name = "slug", unique = true)
     private String slug;
@@ -126,12 +126,12 @@ public class Video {
                 Objects.equals(name, video.name) &&
                 Objects.equals(videoFile, video.videoFile) &&
                 Objects.equals(featured, video.featured) &&
-                Objects.equals(release, video.release) &&
+                Objects.equals(song, video.song) &&
                 Objects.equals(slug, video.slug);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, name, videoFile, featured, release, slug);
+        return Objects.hash(id, name, videoFile, featured, song, slug);
     }
 }

@@ -48,9 +48,9 @@ public class VideoValidator {
                 throw new ServiceException(ErrorCode.INVALID_VIDEO, "Featured video must contain an start and end time to create preview clip.");
             }
 
-            if (video.getRelease() == null && video.getExternalUrl() == null) {
-                log.error("Featured videos must be linked to a TradeKraft release or have an external link.");
-                throw new ServiceException(ErrorCode.INVALID_VIDEO, "Featured videos must be linked to a TradeKraft release or have an external link.");
+            if (video.getSong() == null && video.getExternalUrl() == null) {
+                log.error("Featured videos must be linked to a TradeKraft song or have an external link.");
+                throw new ServiceException(ErrorCode.INVALID_VIDEO, "Featured videos must be linked to a TradeKraft song or have an external link.");
             }
 
             validateVideoPreviewTime(video.getVideoPreviewStartTime(), video.getVideoPreviewEndTime());

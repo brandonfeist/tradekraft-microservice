@@ -34,6 +34,7 @@ public enum ErrorCode {
     INVALID_SONG_TRACK_NUMBER(HttpStatus.BAD_REQUEST.value(), "Invalid song track number"),
     INVALID_SONG_COUNT(HttpStatus.BAD_REQUEST.value(), "Invalid song count"),
     INVALID_SONG_FILE(HttpStatus.BAD_REQUEST.value(), "Invalid song file"),
+    INVALID_SONG_SLUG(HttpStatus.BAD_REQUEST.value(), "Invalid song slug"),
 
     INVALID_VIDEO(HttpStatus.BAD_REQUEST.value(), "Invalid video"),
     INVALID_VIDEO_PREVIEW_TIME(HttpStatus.BAD_REQUEST.value(), "Invalid video preview time"),

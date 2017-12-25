@@ -3,9 +3,9 @@ package com.tradekraftcollective.microservice.service.impl;
 import com.github.slugify.Slugify;
 import com.tradekraftcollective.microservice.exception.ErrorCode;
 import com.tradekraftcollective.microservice.exception.ServiceException;
-import com.tradekraftcollective.microservice.persistence.entity.Release;
+import com.tradekraftcollective.microservice.persistence.entity.Song;
 import com.tradekraftcollective.microservice.persistence.entity.Video;
-import com.tradekraftcollective.microservice.repository.IReleaseRepository;
+import com.tradekraftcollective.microservice.repository.ISongRepository;
 import com.tradekraftcollective.microservice.repository.IVideoRepository;
 import com.tradekraftcollective.microservice.service.IVideoManagementService;
 import com.tradekraftcollective.microservice.utilities.VideoProcessingUtil;
@@ -23,7 +23,7 @@ public class VideoManagementService implements IVideoManagementService {
     IVideoRepository videoRepository;
 
     @Autowired
-    IReleaseRepository releaseRepository;
+    ISongRepository songRepository;
 
     @Autowired
     VideoProcessingUtil videoProcessingUtil;
@@ -37,20 +37,20 @@ public class VideoManagementService implements IVideoManagementService {
 
         Video randomVideo = videoRepository.findRandomFeatureVideo();
 
-        log.info("***** SUCCESSFULLY GOT RANDOM VIDEO WITH NAME = {} *****", randomVideo.getName());
+        if(randomVideo != null) {
+            log.info("***** SUCCESSFULLY GOT RANDOM VIDEO WITH NAME = {} *****", randomVideo.getName());
+        }
 
         return randomVideo;
     }
 
     @Override
     public Video createVideo(Video video, MultipartFile videoFile) {
-        // Use ffmpeg to get picture to use while vid is loading
-        // Use ffmpeg to convert to mp4 and webm
         log.info("Create video, name: {}", video.getName());
 
         videoValidator.validateVideo(video, videoFile);
 
-        video.setRelease(findAndSetVideoRelease(video));
+        video.setSong(findAndSetVideoSong(video));
 
         video.setSlug(createVideoSlug(video.getName()));
 
@@ -72,7 +72,7 @@ public class VideoManagementService implements IVideoManagementService {
 
         videoValidator.validateVideo(video);
 
-        video.setRelease(findAndSetVideoRelease(video));
+        video.setSong(findAndSetVideoSong(video));
 
         video.setSlug(createVideoSlug(video.getName()));
 
@@ -108,18 +108,18 @@ public class VideoManagementService implements IVideoManagementService {
         return duplicateSlugs > 0 ? result.concat("-" + (duplicateSlugs + 1)) : result;
     }
 
-    private Release findAndSetVideoRelease(Video video) {
-        Release videoRelease = video.getRelease();
+    private Song findAndSetVideoSong(Video video) {
+        Song videoSong = video.getSong();
 
-        if(videoRelease != null) {
-            Release checkedRelease = releaseRepository.findBySlug(videoRelease.getSlug());
+        if(videoSong != null) {
+            Song checkedSong = songRepository.findBySlug(videoSong.getSlug());
 
-            if (checkedRelease == null) {
-                log.error("Release with slug [{}] does not exist.", checkedRelease.getSlug());
-                throw new ServiceException(ErrorCode.INVALID_RELEASE_SLUG, "release with slug [" + checkedRelease.getSlug() + "] does not exist.");
+            if (checkedSong == null) {
+                log.error("Song with slug [{}] does not exist.", checkedSong.getSlug());
+                throw new ServiceException(ErrorCode.INVALID_SONG_SLUG, "song with slug [" + checkedSong.getSlug() + "] does not exist.");
             }
 
-            return checkedRelease;
+            return checkedSong;
         }
 
         return null;
