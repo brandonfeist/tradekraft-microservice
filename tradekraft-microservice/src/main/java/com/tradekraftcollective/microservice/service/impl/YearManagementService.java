@@ -3,6 +3,7 @@ package com.tradekraftcollective.microservice.service.impl;
 import com.tradekraftcollective.microservice.persistence.entity.Year;
 import com.tradekraftcollective.microservice.repository.IYearRepository;
 import com.tradekraftcollective.microservice.service.IYearManagementService;
+import com.tradekraftcollective.microservice.validator.YearValidator;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
@@ -19,8 +20,11 @@ public class YearManagementService implements IYearManagementService {
     @Autowired
     IYearRepository yearRepository;
 
+    @Autowired
+    YearValidator yearValidator;
+
     @Override
-    public List<Year> getyears( String sortOrder) {
+    public List<Year> getyears(String sortOrder) {
         log.info("Fetching all years.");
 
         Sort order = new Sort(Sort.Direction.ASC, "year");
@@ -31,5 +35,18 @@ public class YearManagementService implements IYearManagementService {
         List<Year> years = yearRepository.findAll(order);
 
         return years;
+    }
+
+    @Override
+    public Year createYear(Year year) {
+        log.info("Creating year [{}]", year.getYear());
+
+        yearValidator.validateYear(year);
+
+        Year returnYear = yearRepository.save(year);
+
+        log.info("***** SUCCESSFULLY CREATED YEAR = {} *****", returnYear.getYear());
+
+        return returnYear;
     }
 }

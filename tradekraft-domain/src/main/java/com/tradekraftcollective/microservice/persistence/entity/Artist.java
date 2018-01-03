@@ -95,44 +95,52 @@ public class Artist {
     private List<Year> yearsActive;
 
     public List<Event> getEvents() {
-        List<Event> eventsList = this.events;
-        Timestamp currentTimestamp = new Timestamp(System.currentTimeMillis());
+        if(this.events != null) {
+            List<Event> eventsList = this.events;
+            Timestamp currentTimestamp = new Timestamp(System.currentTimeMillis());
 
-        for(int eventIndex = (eventsList.size() - 1); eventIndex >= 0; eventIndex--) {
-            if(currentTimestamp.compareTo(eventsList.get(eventIndex).getEndDateTime()) > 0) {
-                eventsList.remove(eventIndex);
+            for (int eventIndex = (eventsList.size() - 1); eventIndex >= 0; eventIndex--) {
+                if (currentTimestamp.compareTo(eventsList.get(eventIndex).getEndDateTime()) > 0) {
+                    eventsList.remove(eventIndex);
+                }
             }
+
+            return eventsList;
         }
 
-        return eventsList;
+        return null;
     }
 
     public JsonNode getReleases() {
-        ObjectMapper objectMapper = new ObjectMapper();
-        ObjectNode objectNode = objectMapper.createObjectNode();
+        if(getSongs() != null) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            ObjectNode objectNode = objectMapper.createObjectNode();
 
-        Set<Release> releaseSet = new HashSet<>();
-        for(Song song : getSongs()) {
-            releaseSet.add(song.getRelease());
-        }
-
-        List<Release> releaseList = new ArrayList<>();
-        List<Release> appearsOnList = new ArrayList<>();
-        for(Release release : releaseSet) {
-            if(ownsRelease(release)) {
-                releaseList.add(release);
-            } else {
-                appearsOnList.add(release);
+            Set<Release> releaseSet = new HashSet<>();
+            for (Song song : getSongs()) {
+                releaseSet.add(song.getRelease());
             }
+
+            List<Release> releaseList = new ArrayList<>();
+            List<Release> appearsOnList = new ArrayList<>();
+            for (Release release : releaseSet) {
+                if (ownsRelease(release)) {
+                    releaseList.add(release);
+                } else {
+                    appearsOnList.add(release);
+                }
+            }
+
+            sortReleaseList(releaseList);
+            sortReleaseList(appearsOnList);
+
+            objectNode.set("artistReleases", objectMapper.convertValue(releaseList, JsonNode.class));
+            objectNode.set("appearsOn", objectMapper.convertValue(appearsOnList, JsonNode.class));
+
+            return objectNode;
         }
 
-        sortReleaseList(releaseList);
-        sortReleaseList(appearsOnList);
-
-        objectNode.set("artistReleases", objectMapper.convertValue(releaseList, JsonNode.class));
-        objectNode.set("appearsOn", objectMapper.convertValue(appearsOnList, JsonNode.class));
-
-        return objectNode;
+        return null;
     }
 
     private void sortReleaseList(List<Release> releases) {

@@ -85,7 +85,7 @@ public class ArtistValidator {
         }
     }
 
-    private void validateArtistImage(MultipartFile image) {
+    public void validateArtistImage(MultipartFile image) {
         try {
             imageValidationUtil.validateImageExtension(image);
             imageValidationUtil.minimumImageSize(1024, 1024, ImageIO.read(image.getInputStream()));

@@ -129,6 +129,7 @@ public class VideoProcessingUtil {
                     .addOutput(outputFile.getName())
                     .setFormat(videoFormat.getFormat())        // Format is inferred from filename, or can be set
 //                    .setTargetSize(250_000)  // Aim for a 250KB file
+                    .setVideoQuality(1.0)
 
                     .disableSubtitle()       // No subtiles
 

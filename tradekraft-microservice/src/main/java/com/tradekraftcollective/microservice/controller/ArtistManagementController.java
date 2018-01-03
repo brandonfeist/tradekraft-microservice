@@ -1,10 +1,12 @@
 package com.tradekraftcollective.microservice.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.fge.jsonpatch.JsonPatchOperation;
 import com.tradekraftcollective.microservice.persistence.entity.Artist;
 import com.tradekraftcollective.microservice.repository.IArtistRepository;
 import com.tradekraftcollective.microservice.service.IArtistManagementService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -13,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.inject.Inject;
+import java.io.IOException;
 import java.util.List;
 
 /**
@@ -26,6 +29,9 @@ public class ArtistManagementController {
     private static final String DEFAULT_PAGE_SIZE = "100";
     private static final String SORT_ORDER_DESC = "asc";
     private static final String SORT_FIELD_NAME = "name";
+
+    @Autowired
+    private ObjectMapper objectMapper;
 
     @Inject
     private IArtistManagementService artistManagementService;
@@ -62,15 +68,27 @@ public class ArtistManagementController {
         return new ResponseEntity<>(artist, HttpStatus.OK);
     }
 
-    @RequestMapping(method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<?> createArtist(
-            @RequestPart("artist") Artist inputArtist,
-            @RequestPart("image") MultipartFile imageFile,
+    @RequestMapping(method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> createArtist (
+            @RequestBody Artist inputArtist,
             @RequestHeader(value = "X-Request-ID", required = false) String xRequestId
     ) {
         log.info("createArtist [{}] {}", xRequestId, inputArtist);
 
-        Artist artist = artistManagementService.createArtist(inputArtist, imageFile);
+        Artist artist = artistManagementService.createArtist(inputArtist);
+
+        return new ResponseEntity<>(artist, HttpStatus.CREATED);
+    }
+
+    @RequestMapping(value = "/image", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> uploadArtistImage (
+            @RequestPart("artist-slug") String artistSlug,
+            @RequestPart("image") MultipartFile imageFile,
+            @RequestHeader(value = "X-Request-ID", required = false) String xRequestId
+    ) {
+        log.info("uploadArtistImage [{}] {}", xRequestId, artistSlug);
+
+        Artist artist = artistManagementService.uploadArtistImage(artistSlug, imageFile);
 
         return new ResponseEntity<>(artist, HttpStatus.CREATED);
     }

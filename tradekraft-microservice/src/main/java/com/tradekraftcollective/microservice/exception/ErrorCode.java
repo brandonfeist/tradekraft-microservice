@@ -41,6 +41,8 @@ public enum ErrorCode {
     INVALID_VIDEO_EXTERNAL_LINK(HttpStatus.BAD_REQUEST.value(), "Invalid external video link"),
     INVALID_VIDEO_SLUG(HttpStatus.BAD_REQUEST.value(), "Invalid video slug"),
 
+    INVALID_YEAR(HttpStatus.BAD_REQUEST.value(), "Invalid year"),
+
     INVALID_IMAGE_DEMINSIONS(HttpStatus.BAD_REQUEST.value(), "Invalid image dimensions"),
     INVALID_IMAGE_EXTENSION(HttpStatus.BAD_REQUEST.value(), "Invalid image extension"),
 

@@ -26,7 +26,7 @@ public class Video {
     @JsonIgnore
     public List<VideoFormat> getVideoFormats() {
         List<VideoFormat> audioFormats = new ArrayList<>();
-        audioFormats.add(new VideoFormat("mp4","libx264", "mp4", "mp4"));
+//        audioFormats.add(new VideoFormat("mp4","libx264", "mp4", "mp4"));
         audioFormats.add(new VideoFormat("webm","libvpx", "webm", "webm"));
 
         return  audioFormats;

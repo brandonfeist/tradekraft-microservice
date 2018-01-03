@@ -15,6 +15,7 @@ import com.tradekraftcollective.microservice.repository.IYearRepository;
 import com.tradekraftcollective.microservice.service.AmazonS3Service;
 import com.tradekraftcollective.microservice.service.IArtistManagementService;
 import com.tradekraftcollective.microservice.service.IArtistPatchService;
+import com.tradekraftcollective.microservice.service.IYearManagementService;
 import com.tradekraftcollective.microservice.utilities.ImageProcessingUtil;
 import com.tradekraftcollective.microservice.validator.ArtistValidator;
 import org.slf4j.Logger;
@@ -51,6 +52,9 @@ public class ArtistManagementService implements IArtistManagementService {
 
     @Inject
     IArtistPatchService artistPatchService;
+
+    @Autowired
+    IYearManagementService yearManagementService;
 
     @Inject
     ImageProcessingUtil imageProcessingUtil;
@@ -99,20 +103,35 @@ public class ArtistManagementService implements IArtistManagementService {
     }
 
     @Override
-    public Artist createArtist(Artist artist, MultipartFile imageFile) {
+    public Artist createArtist(Artist artist) {
         logger.info("Create artist, name: {}", artist.getName());
 
-        artistValidator.validateArtist(artist, imageFile);
+        artistValidator.validateArtist(artist);
+
+        artist.setYearsActive(retrieveActiveYears(artist));
 
         artist.setSlug(createArtistSlug(artist.getName()));
-
-        artist.setImage(imageProcessingUtil.processImageAndUpload(artist.getImageSizes(),
-                (artist.ARTIST_IMAGE_UPLOAD_PATH + artist.getSlug() + "/"),
-                imageFile, 1.0));
 
         Artist returnArtist = artistRepository.save(artist);
 
         logger.info("***** SUCCESSFULLY CREATED ARTIST WITH SLUG = {} *****", returnArtist.getSlug());
+
+        return returnArtist;
+    }
+
+    @Override
+    public Artist uploadArtistImage(String artistSlug, MultipartFile imageFile) {
+        logger.info("Uploading image for artist slug [{}]", artistSlug);
+
+        Artist returnArtist = artistRepository.findBySlug(artistSlug);
+
+        returnArtist.setImage(imageProcessingUtil.processImageAndUpload(returnArtist.getImageSizes(),
+                (returnArtist.ARTIST_IMAGE_UPLOAD_PATH + returnArtist.getSlug() + "/"),
+                imageFile, 1.0));
+
+        returnArtist = artistRepository.save(returnArtist);
+
+        logger.info("***** SUCCESSFULLY UPLOADED IMAGE FOR ARTIST = {} *****", returnArtist.getSlug());
 
         return returnArtist;
     }
@@ -209,5 +228,27 @@ public class ArtistManagementService implements IArtistManagementService {
 
         int duplicateSlugs = artistRepository.findBySlugStartingWith(result).size();
         return duplicateSlugs > 0 ? result.concat("-" + (duplicateSlugs + 1)) : result;
+    }
+
+    private List<Year> retrieveActiveYears(Artist artist) {
+        List<Year> artistYears = artist.getYearsActive();
+        List<Year> years = new ArrayList<>();
+
+        if(artistYears == null) {
+            return null;
+        }
+
+        for(int yearIndex = 0; yearIndex < artistYears.size(); yearIndex++) {
+            Year tmpYear = yearRepository.findByYear(artistYears.get(yearIndex).getYear().toString());
+
+            if(tmpYear != null) {
+                years.add(tmpYear);
+            } else {
+                Year newYear = yearManagementService.createYear(artistYears.get(yearIndex));
+                years.add(newYear);
+            }
+        }
+
+        return years;
     }
 }

@@ -15,7 +15,9 @@ public interface IArtistManagementService {
 
     Artist getArtist(String artistSlug);
 
-    Artist createArtist(Artist artist, MultipartFile imageFile);
+    Artist createArtist(Artist artist);
+
+    Artist uploadArtistImage(String artistSlug, MultipartFile imageFile);
 
     Artist patchArtist(final List<JsonPatchOperation> patchOperations, final MultipartFile imageFile, final String artistSlug);
 

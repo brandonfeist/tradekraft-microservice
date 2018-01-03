@@ -6,4 +6,6 @@ import java.util.List;
 
 public interface IYearManagementService {
     List<Year> getyears(String sortOrder);
+
+    Year createYear(Year year);
 }
