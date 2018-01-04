@@ -93,16 +93,15 @@ public class ArtistManagementController {
         return new ResponseEntity<>(artist, HttpStatus.CREATED);
     }
 
-    @RequestMapping(value = "/{slug}", method = RequestMethod.PATCH, produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @RequestMapping(value = "/{slug}", method = RequestMethod.PATCH, produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> patchArtist(
             @PathVariable("slug") String artistSlug,
-            @RequestPart("patch") List<JsonPatchOperation> patches,
-            @RequestPart(value = "image", required = false) MultipartFile imageFile,
+            @RequestBody List<JsonPatchOperation> patches,
             @RequestHeader(value = "X-Request-ID", required = false) String xRequestId
     ) {
         log.info("patchArtist [{}] {}", xRequestId, artistSlug);
 
-        final Artist artist = artistManagementService.patchArtist(patches, imageFile, artistSlug);
+        final Artist artist = artistManagementService.patchArtist(patches, artistSlug);
 
         return new ResponseEntity<>(artist, HttpStatus.OK);
     }

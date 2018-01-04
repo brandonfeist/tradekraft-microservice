@@ -107,6 +107,14 @@ public class AmazonS3Service {
         return putObjectResult;
     }
 
+    public void moveObject(String originalyKey, String newKey) {
+        log.info("Moving AWS Key: {} to new Key: {}", originalyKey, newKey);
+
+        amazonS3Client.copyObject(bucket, originalyKey, bucket, newKey);
+
+        delete(originalyKey);
+    }
+
     public void delete(String deleteKey) {
         log.info("Deleting AWS Key: {}", deleteKey);
 

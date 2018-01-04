@@ -138,7 +138,7 @@ public class ArtistManagementService implements IArtistManagementService {
 
     @Override
     @Transactional(rollbackFor = {RuntimeException.class, ServiceException.class, IOException.class})
-    public Artist patchArtist(List<JsonPatchOperation> patchOperations, MultipartFile imageFile, String artistSlug) {
+    public Artist patchArtist(List<JsonPatchOperation> patchOperations, String artistSlug) {
 
         Artist oldArtist = artistRepository.findBySlug(artistSlug);
         if(oldArtist == null) {
@@ -146,58 +146,69 @@ public class ArtistManagementService implements IArtistManagementService {
             throw new ServiceException(ErrorCode.INVALID_ARTIST_SLUG, "Artist with slug [" + artistSlug + "] does not exist");
         }
 
-        boolean uploadingNewImage = (imageFile != null);
-        if(uploadingNewImage) {
-            JsonPatchOperation imageOperation;
-
-            try {
-                if (oldArtist.getImage() != null) {
-                    logger.info("New image found, creating imagePatch operation: [{}], overwriting image: {}",
-                            PatchOperationConstants.REPLACE, oldArtist.getImageName());
-
-                    String jsonImageReplacePatch = "{\"op\": \"" + PatchOperationConstants.REPLACE + "\", " +
-                            "\"path\": \"" + ArtistPatchService.ARTIST_IMAGE_PATH + "\", " +
-                            "\"value\": \"" + imageFile.getOriginalFilename() + "\"}";
-
-                    imageOperation = objectMapper.readValue(jsonImageReplacePatch, JsonPatchOperation.class);
-
-                    patchOperations.add(imageOperation);
-                } else {
-                    logger.info("New image found, creating imagePatch operation: {}", PatchOperationConstants.ADD);
-
-                    String jsonImageReplacePatch = "{\"op\": \"" + PatchOperationConstants.ADD + "\", " +
-                            "\"path\": \"" + ArtistPatchService.ARTIST_IMAGE_PATH + "\", " +
-                            "\"value\": \"" + imageFile.getOriginalFilename() + "\"}";
-
-                    imageOperation = objectMapper.readValue(jsonImageReplacePatch, JsonPatchOperation.class);
-
-                    patchOperations.add(imageOperation);
-                }
-            } catch(IOException e) {
-                e.printStackTrace();
-            }
-        }
+//        boolean uploadingNewImage = (imageFile != null);
+//        if(uploadingNewImage) {
+//            JsonPatchOperation imageOperation;
+//
+//            try {
+//                if (oldArtist.getImage() != null) {
+//                    logger.info("New image found, creating imagePatch operation: [{}], overwriting image: {}",
+//                            PatchOperationConstants.REPLACE, oldArtist.getImageName());
+//
+//                    String jsonImageReplacePatch = "{\"op\": \"" + PatchOperationConstants.REPLACE + "\", " +
+//                            "\"path\": \"" + ArtistPatchService.ARTIST_IMAGE_PATH + "\", " +
+//                            "\"value\": \"" + imageFile.getOriginalFilename() + "\"}";
+//
+//                    imageOperation = objectMapper.readValue(jsonImageReplacePatch, JsonPatchOperation.class);
+//
+//                    patchOperations.add(imageOperation);
+//                } else {
+//                    logger.info("New image found, creating imagePatch operation: {}", PatchOperationConstants.ADD);
+//
+//                    String jsonImageReplacePatch = "{\"op\": \"" + PatchOperationConstants.ADD + "\", " +
+//                            "\"path\": \"" + ArtistPatchService.ARTIST_IMAGE_PATH + "\", " +
+//                            "\"value\": \"" + imageFile.getOriginalFilename() + "\"}";
+//
+//                    imageOperation = objectMapper.readValue(jsonImageReplacePatch, JsonPatchOperation.class);
+//
+//                    patchOperations.add(imageOperation);
+//                }
+//            } catch(IOException e) {
+//                e.printStackTrace();
+//            }
+//        }
 
         Artist patchedArtist = artistPatchService.patchArtist(patchOperations, oldArtist);
 
         if(!oldArtist.getName().equals(patchedArtist.getName())) {
             patchedArtist.setSlug(createArtistSlug(patchedArtist.getName()));
-        }
 
-        if(uploadingNewImage) {
-            artistValidator.validateArtist(patchedArtist, imageFile);
-
-            ObjectListing directoryImages = amazonS3Service.getDirectoryContent((ARTIST_IMAGE_PATH + artistSlug + "/"), null);
+            ObjectListing directoryImages = amazonS3Service.getDirectoryContent(oldArtist.getAWSKey(), null);
             for (S3ObjectSummary summary: directoryImages.getObjectSummaries()) {
-                amazonS3Service.delete(summary.getKey());
-            }
+                String[] splitKey = summary.getKey().split("/");
 
-            patchedArtist.setImage(imageProcessingUtil.processImageAndUpload(patchedArtist.getImageSizes(),
-                    (patchedArtist.ARTIST_IMAGE_UPLOAD_PATH + patchedArtist.getSlug() + "/"),
-                    imageFile, 1.0));
-        } else {
-            artistValidator.validateArtist(patchedArtist);
+                amazonS3Service.moveObject(summary.getKey(), patchedArtist.getAWSKey() + splitKey[splitKey.length - 1]);
+            }
         }
+
+        if(!oldArtist.getYearsActive().equals(patchedArtist.getYearsActive())) {
+            patchedArtist.setYearsActive(yearManagementService.getExistingYears(patchedArtist.getYearsActive()));
+        }
+
+//        if(uploadingNewImage) {
+//            artistValidator.validateArtist(patchedArtist, imageFile);
+//
+//            ObjectListing directoryImages = amazonS3Service.getDirectoryContent((ARTIST_IMAGE_PATH + artistSlug + "/"), null);
+//            for (S3ObjectSummary summary: directoryImages.getObjectSummaries()) {
+//                amazonS3Service.delete(summary.getKey());
+//            }
+//
+//            patchedArtist.setImage(imageProcessingUtil.processImageAndUpload(patchedArtist.getImageSizes(),
+//                    (patchedArtist.ARTIST_IMAGE_UPLOAD_PATH + patchedArtist.getSlug() + "/"),
+//                    imageFile, 1.0));
+//        } else {
+        artistValidator.validateArtist(patchedArtist);
+//        }
 
         artistRepository.save(patchedArtist);
 

@@ -2,6 +2,7 @@ package com.tradekraftcollective.microservice.service.impl;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.github.fge.jsonpatch.*;
 import com.tradekraftcollective.microservice.constants.PatchOperationConstants;
 import com.tradekraftcollective.microservice.exception.ErrorCode;
@@ -30,6 +31,7 @@ public class ArtistPatchService implements IArtistPatchService {
     public static final String ARTIST_TWITTER_PATH = "/twitter";
     public static final String ARTIST_INSTAGRAM_PATH = "/instagram";
     public static final String ARTIST_SPOTIFY_PATH = "/spotify";
+    public static final String YEARS_ACTIVE_PATH = "/yearsActive";
 
     @Inject
     ObjectMapper objectMapper;
@@ -50,8 +52,15 @@ public class ArtistPatchService implements IArtistPatchService {
         pathMap.put(ARTIST_TWITTER_PATH, ARTIST_TWITTER_PATH);
         pathMap.put(ARTIST_INSTAGRAM_PATH, ARTIST_INSTAGRAM_PATH);
         pathMap.put(ARTIST_SPOTIFY_PATH, ARTIST_SPOTIFY_PATH);
+        pathMap.put(YEARS_ACTIVE_PATH, YEARS_ACTIVE_PATH);
 
         for(JsonPatchOperation operation : patchOperations) {
+            if(((PathValueOperation) operation).getPath().equals(ARTIST_IMAGE_PATH)) {
+                log.error("Cannot patch image from patch endpoint. Must use artist photo endpoint.");
+                throw new ServiceException(ErrorCode.INVALID_PATCH,
+                        "Cannot patch image from patch endpoint. Must use artist image endpoint.");
+            }
+
             if(PatchOperationConstants.COPY.equals(operation.getOp())
                     || PatchOperationConstants.MOVE.equals(operation.getOp())) {
                 DualPathOperation dualPathOperation = (DualPathOperation) operation;
@@ -61,11 +70,14 @@ public class ArtistPatchService implements IArtistPatchService {
 
             } else {
                 PathValueOperation pathValueOperation = (PathValueOperation) operation;
-
             }
         }
 
         JsonNode artistJsonNode = objectMapper.valueToTree(artist);
+
+        ((ObjectNode) artistJsonNode).remove("releases");
+
+        ((ObjectNode) artistJsonNode).put("image", artist.getImageName());
 
         try {
             JsonPatch patcher = new JsonPatch(patchOperations);

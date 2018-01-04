@@ -153,6 +153,9 @@ public class Artist {
     }
 
     @JsonIgnore
+    public String getAWSKey() { return (ARTIST_IMAGE_UPLOAD_PATH + this.slug + "/"); }
+
+    @JsonIgnore
     public String getImageName() {
         return image;
     }

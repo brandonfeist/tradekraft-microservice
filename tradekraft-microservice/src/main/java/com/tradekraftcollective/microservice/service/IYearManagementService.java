@@ -8,4 +8,6 @@ public interface IYearManagementService {
     List<Year> getyears(String sortOrder);
 
     Year createYear(Year year);
+
+    List<Year> getExistingYears(List<Year> years);
 }

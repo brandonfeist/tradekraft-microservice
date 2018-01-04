@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Slf4j
@@ -48,5 +49,22 @@ public class YearManagementService implements IYearManagementService {
         log.info("***** SUCCESSFULLY CREATED YEAR = {} *****", returnYear.getYear());
 
         return returnYear;
+    }
+
+    @Override
+    public List<Year> getExistingYears(List<Year> years) {
+        List<Year> formattedYearsList = new ArrayList<>();
+
+        for(int yearIndex = 0; yearIndex < years.size(); yearIndex++) {
+            Year foundYear = yearRepository.findByYear(years.get(yearIndex).getYear().toString());
+
+            if(foundYear != null) {
+                formattedYearsList.add(foundYear);
+            } else {
+                formattedYearsList.add(years.get(yearIndex));
+            }
+        }
+
+        return formattedYearsList;
     }
 }
