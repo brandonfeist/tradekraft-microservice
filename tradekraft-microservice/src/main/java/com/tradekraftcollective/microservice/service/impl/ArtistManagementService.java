@@ -125,6 +125,8 @@ public class ArtistManagementService implements IArtistManagementService {
 
         Artist returnArtist = artistRepository.findBySlug(artistSlug);
 
+        deleteAllArtistsImages(artistSlug);
+
         returnArtist.setImage(imageProcessingUtil.processImageAndUpload(returnArtist.getImageSizes(),
                 (returnArtist.ARTIST_IMAGE_UPLOAD_PATH + returnArtist.getSlug() + "/"),
                 imageFile, 1.0));
@@ -223,10 +225,7 @@ public class ArtistManagementService implements IArtistManagementService {
 
         artistValidator.validateArtistSlug(artistSlug);
 
-        ObjectListing directoryImages = amazonS3Service.getDirectoryContent((ARTIST_IMAGE_PATH + artistSlug + "/"), null);
-        for (S3ObjectSummary summary: directoryImages.getObjectSummaries()) {
-            amazonS3Service.delete(summary.getKey());
-        }
+        deleteAllArtistsImages(artistSlug);
 
         artistRepository.deleteBySlug(artistSlug);
 
@@ -261,5 +260,23 @@ public class ArtistManagementService implements IArtistManagementService {
         }
 
         return years;
+    }
+
+    private void deleteAllArtistsImages(Artist artist) {
+        ObjectListing directoryImages = amazonS3Service.getDirectoryContent(artist.getAWSKey(), null);
+        for (S3ObjectSummary summary: directoryImages.getObjectSummaries()) {
+            if(amazonS3Service.doesObjectExist(summary.getKey())) {
+                amazonS3Service.delete(summary.getKey());
+            }
+        }
+    }
+
+    private void deleteAllArtistsImages(String artistSlug) {
+        ObjectListing directoryImages = amazonS3Service.getDirectoryContent((ARTIST_IMAGE_PATH + artistSlug + "/"), null);
+        for (S3ObjectSummary summary: directoryImages.getObjectSummaries()) {
+            if(amazonS3Service.doesObjectExist(summary.getKey())) {
+                amazonS3Service.delete(summary.getKey());
+            }
+        }
     }
 }

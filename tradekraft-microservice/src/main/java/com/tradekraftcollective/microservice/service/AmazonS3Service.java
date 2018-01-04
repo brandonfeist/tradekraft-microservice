@@ -123,6 +123,10 @@ public class AmazonS3Service {
         amazonS3Client.deleteObject(deleteObjectRequest);
     }
 
+    public boolean doesObjectExist(String objectKey) {
+        return amazonS3Client.doesObjectExist(bucket, objectKey);
+    }
+
     public ObjectListing getDirectoryContent(String prefix, String delimiter) {
         log.info("Getting AWS directory objects with Prefix: {} and Delimiter: {}", prefix, delimiter);
 
