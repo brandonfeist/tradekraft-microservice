@@ -65,15 +65,15 @@ public class EventManagementService implements IEventManagementService {
     ObjectMapper objectMapper;
 
     @Override
-    public Page<Event> getEvents(int page, int pageSize, String sortField, String sortOrder, boolean officialEventsOnly, boolean pastEvents) {
-        log.info("Fetching events, page: {} pageSize: {} sortField: {} sortOrder: {} officialEventsOnly: {} pastEvents: {}", page, pageSize, sortField, sortOrder, officialEventsOnly, pastEvents);
+    public Page<Event> getEvents(int page, int pageSize, String sortField, String sortOrder, boolean officialEventsOnly, boolean pastEvents, boolean futureEvents) {
+        log.info("Fetching events, page: {} pageSize: {} sortField: {} sortOrder: {} officialEventsOnly: {} pastEvents: {} futureEvents: {}", page, pageSize, sortField, sortOrder, officialEventsOnly, pastEvents, futureEvents);
 
         Sort.Direction order = Sort.Direction.ASC;
         if(sortOrder != null && sortOrder.equalsIgnoreCase(DESCENDING)) {
             order = Sort.Direction.DESC;
         }
 
-        Specification<Event> result = getEventSpecs(officialEventsOnly, pastEvents);
+        Specification<Event> result = getEventSpecs(officialEventsOnly, pastEvents, futureEvents);
 
         PageRequest request = new PageRequest(page, pageSize, order, sortField);
 
@@ -99,18 +99,14 @@ public class EventManagementService implements IEventManagementService {
     }
 
     @Override
-    public Event createEvent(Event event, MultipartFile imageFile) {
+    public Event createEvent(Event event) {
         log.info("Create event, name: {}", event.getName());
 
-        eventValidator.validateEvent(event, imageFile);
+        eventValidator.validateEvent(event);
 
         event.setArtists(findAndSetEventArtists(event));
 
         event.setSlug(createEventSlug(event.getName()));
-
-        event.setImage(imageProcessingUtil.processImageAndUpload(event.getImageSizes(),
-                (event.EVENT_IMAGE_UPLOAD_PATH + event.getSlug() + "/"),
-                imageFile, 1.0));
 
         Event returnEvent = eventRepository.save(event);
 
@@ -120,8 +116,27 @@ public class EventManagementService implements IEventManagementService {
     }
 
     @Override
+    public Event uploadEventImage(String eventSlug, MultipartFile imageFile) {
+        log.info("Uploading image for event slug [{}]", eventSlug);
+
+        Event returnEvent = eventRepository.findBySlug(eventSlug);
+
+        deleteAllEventImages(eventSlug);
+
+        returnEvent.setImage(imageProcessingUtil.processImageAndUpload(returnEvent.getImageSizes(),
+                (returnEvent.EVENT_IMAGE_UPLOAD_PATH + returnEvent.getSlug() + "/"),
+                imageFile, 1.0));
+
+        returnEvent = eventRepository.save(returnEvent);
+
+        log.info("***** SUCCESSFULLY UPLOADED IMAGE FOR EVENT = {} *****", returnEvent.getSlug());
+
+        return returnEvent;
+    }
+
+    @Override
     @Transactional(rollbackFor = {RuntimeException.class, ServiceException.class, IOException.class})
-    public Event patchEvent(List<JsonPatchOperation> patchOperations, MultipartFile imageFile, String eventSlug) {
+    public Event patchEvent(List<JsonPatchOperation> patchOperations, String eventSlug) {
 
         Event oldEvent = eventRepository.findBySlug(eventSlug);
         if(oldEvent == null) {
@@ -129,58 +144,69 @@ public class EventManagementService implements IEventManagementService {
             throw new ServiceException(ErrorCode.INVALID_EVENT_SLUG, "Event with slug [" + eventSlug + "] does not exist");
         }
 
-        boolean uploadingNewImage = (imageFile != null);
-        if(uploadingNewImage) {
-            JsonPatchOperation imageOperation;
-
-            try {
-                if (oldEvent.getImage() != null) {
-                    log.info("New image found, creating imagePatch operation: [{}], overwriting image: {}",
-                            PatchOperationConstants.REPLACE, oldEvent.getImageName());
-
-                    String jsonImageReplacePatch = "{\"op\": \"" + PatchOperationConstants.REPLACE + "\", " +
-                            "\"path\": \"" + EventPatchService.EVENT_IMAGE_PATH + "\", " +
-                            "\"value\": \"" + imageFile.getOriginalFilename() + "\"}";
-
-                    imageOperation = objectMapper.readValue(jsonImageReplacePatch, JsonPatchOperation.class);
-
-                    patchOperations.add(imageOperation);
-                } else {
-                    log.info("New image found, creating imagePatch operation: {}", PatchOperationConstants.ADD);
-
-                    String jsonImageReplacePatch = "{\"op\": \"" + PatchOperationConstants.ADD + "\", " +
-                            "\"path\": \"" + EventPatchService.EVENT_IMAGE_PATH + "\", " +
-                            "\"value\": \"" + imageFile.getOriginalFilename() + "\"}";
-
-                    imageOperation = objectMapper.readValue(jsonImageReplacePatch, JsonPatchOperation.class);
-
-                    patchOperations.add(imageOperation);
-                }
-            } catch(IOException e) {
-                e.printStackTrace();
-            }
-        }
+//        boolean uploadingNewImage = (imageFile != null);
+//        if(uploadingNewImage) {
+//            JsonPatchOperation imageOperation;
+//
+//            try {
+//                if (oldEvent.getImage() != null) {
+//                    log.info("New image found, creating imagePatch operation: [{}], overwriting image: {}",
+//                            PatchOperationConstants.REPLACE, oldEvent.getImageName());
+//
+//                    String jsonImageReplacePatch = "{\"op\": \"" + PatchOperationConstants.REPLACE + "\", " +
+//                            "\"path\": \"" + EventPatchService.EVENT_IMAGE_PATH + "\", " +
+//                            "\"value\": \"" + imageFile.getOriginalFilename() + "\"}";
+//
+//                    imageOperation = objectMapper.readValue(jsonImageReplacePatch, JsonPatchOperation.class);
+//
+//                    patchOperations.add(imageOperation);
+//                } else {
+//                    log.info("New image found, creating imagePatch operation: {}", PatchOperationConstants.ADD);
+//
+//                    String jsonImageReplacePatch = "{\"op\": \"" + PatchOperationConstants.ADD + "\", " +
+//                            "\"path\": \"" + EventPatchService.EVENT_IMAGE_PATH + "\", " +
+//                            "\"value\": \"" + imageFile.getOriginalFilename() + "\"}";
+//
+//                    imageOperation = objectMapper.readValue(jsonImageReplacePatch, JsonPatchOperation.class);
+//
+//                    patchOperations.add(imageOperation);
+//                }
+//            } catch(IOException e) {
+//                e.printStackTrace();
+//            }
+//        }
 
         Event patchedEvent = eventPatchService.patchEvent(patchOperations, oldEvent);
 
         if(!oldEvent.getName().equals(patchedEvent.getName())) {
             patchedEvent.setSlug(createEventSlug(patchedEvent.getName()));
-        }
 
-        if(uploadingNewImage) {
-            eventValidator.validateEvent(patchedEvent, imageFile);
-
-            ObjectListing directoryImages = amazonS3Service.getDirectoryContent((EVENT_IMAGE_PATH + eventSlug + "/"), null);
+            ObjectListing directoryImages = amazonS3Service.getDirectoryContent(oldEvent.getAWSKey(), null);
             for (S3ObjectSummary summary: directoryImages.getObjectSummaries()) {
-                amazonS3Service.delete(summary.getKey());
-            }
+                String[] splitKey = summary.getKey().split("/");
 
-            patchedEvent.setImage(imageProcessingUtil.processImageAndUpload(patchedEvent.getImageSizes(),
-                    (patchedEvent.EVENT_IMAGE_UPLOAD_PATH + patchedEvent.getSlug() + "/"),
-                    imageFile, 1.0));
-        } else {
-            eventValidator.validateEvent(patchedEvent);
+                amazonS3Service.moveObject(summary.getKey(), patchedEvent.getAWSKey() + splitKey[splitKey.length - 1]);
+            }
         }
+
+        if(!oldEvent.getArtists().equals(patchedEvent.getArtists())) {
+            patchedEvent.setArtists(findAndSetEventArtists(patchedEvent));
+        }
+
+//        if(uploadingNewImage) {
+//            eventValidator.validateEvent(patchedEvent, imageFile);
+//
+//            ObjectListing directoryImages = amazonS3Service.getDirectoryContent((EVENT_IMAGE_PATH + eventSlug + "/"), null);
+//            for (S3ObjectSummary summary: directoryImages.getObjectSummaries()) {
+//                amazonS3Service.delete(summary.getKey());
+//            }
+//
+//            patchedEvent.setImage(imageProcessingUtil.processImageAndUpload(patchedEvent.getImageSizes(),
+//                    (patchedEvent.EVENT_IMAGE_UPLOAD_PATH + patchedEvent.getSlug() + "/"),
+//                    imageFile, 1.0));
+//        } else {
+            eventValidator.validateEvent(patchedEvent);
+//        }
 
         eventRepository.save(patchedEvent);
 
@@ -229,7 +255,7 @@ public class EventManagementService implements IEventManagementService {
         return eventArtists;
     }
 
-    private Specification<Event> getEventSpecs(boolean officialEventsOnly, boolean pastEvents) {
+    private Specification<Event> getEventSpecs(boolean officialEventsOnly, boolean pastEvents, boolean futureEvents) {
         Specification<Event> result = null;
 
         if(officialEventsOnly) {
@@ -248,15 +274,39 @@ public class EventManagementService implements IEventManagementService {
                     new EventSpecification(new SearchCriteria("endDateTime", "<", new Timestamp(System.currentTimeMillis())));
 
             result = Specifications.where(result).and(pastEventSpec);
-        } else {
-            log.info("Getting specs for futureEvents [{}]", pastEvents);
+        }
 
-            EventSpecification pastEventSpec =
+        if(futureEvents) {
+            log.info("Getting specs for futureEvents [{}]", futureEvents);
+
+            EventSpecification futureEventSpec =
                     new EventSpecification(new SearchCriteria("endDateTime", ">=", new Timestamp(System.currentTimeMillis())));
 
-            result = Specifications.where(result).and(pastEventSpec);
+            if(pastEvents) {
+                result = Specifications.where(result).or(futureEventSpec);
+            } else {
+                result = Specifications.where(result).and(futureEventSpec);
+            }
         }
 
         return result;
+    }
+
+    private void deleteAllEventImages(Event event) {
+        ObjectListing directoryImages = amazonS3Service.getDirectoryContent(event.getAWSKey(), null);
+        for (S3ObjectSummary summary: directoryImages.getObjectSummaries()) {
+            if(amazonS3Service.doesObjectExist(summary.getKey())) {
+                amazonS3Service.delete(summary.getKey());
+            }
+        }
+    }
+
+    private void deleteAllEventImages(String eventSlug) {
+        ObjectListing directoryImages = amazonS3Service.getDirectoryContent((EVENT_IMAGE_PATH + eventSlug + "/"), null);
+        for (S3ObjectSummary summary: directoryImages.getObjectSummaries()) {
+            if(amazonS3Service.doesObjectExist(summary.getKey())) {
+                amazonS3Service.delete(summary.getKey());
+            }
+        }
     }
 }

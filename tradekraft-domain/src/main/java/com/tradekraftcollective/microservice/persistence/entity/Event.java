@@ -109,6 +109,9 @@ public class Event {
     private List<Artist> artists;
 
     @JsonIgnore
+    public String getAWSKey() { return (EVENT_IMAGE_UPLOAD_PATH + this.slug + "/"); }
+
+    @JsonIgnore
     public String getImageName() {
         return image;
     }

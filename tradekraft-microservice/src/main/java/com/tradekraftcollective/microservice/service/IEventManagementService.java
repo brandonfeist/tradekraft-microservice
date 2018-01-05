@@ -11,13 +11,15 @@ import java.util.List;
  * Created by brandonfeist on 9/28/17.
  */
 public interface IEventManagementService {
-    Page<Event> getEvents(int page, int pageSize, String sortField, String sortOrder, boolean officialEventsOnly, boolean pastEvents);
+    Page<Event> getEvents(int page, int pageSize, String sortField, String sortOrder, boolean officialEventsOnly, boolean pastEvents, boolean futureEvents);
 
     Event getEvent(String eventSlug);
 
-    Event createEvent(Event event, MultipartFile imageFile);
+    Event createEvent(Event event);
 
-    Event patchEvent(final List<JsonPatchOperation> patchOperations, final MultipartFile imageFile, final String artistSlug);
+    Event uploadEventImage(String eventSlug, MultipartFile imageFile);
+
+    Event patchEvent(final List<JsonPatchOperation> patchOperations, final String artistSlug);
 
     void deleteEvent(String eventSlug);
 }

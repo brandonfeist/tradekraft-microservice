@@ -1,6 +1,7 @@
 package com.tradekraftcollective.microservice.controller;
 
 import com.github.fge.jsonpatch.JsonPatchOperation;
+import com.tradekraftcollective.microservice.persistence.entity.Artist;
 import com.tradekraftcollective.microservice.persistence.entity.Event;
 import com.tradekraftcollective.microservice.service.IEventManagementService;
 import lombok.extern.slf4j.Slf4j;
@@ -38,11 +39,12 @@ public class EventManagementController {
             @RequestParam(value = "sortOrder", defaultValue = SORT_ORDER_DESC, required = false) String sortOrder,
             @RequestParam(value = "officialEvents", defaultValue = "false", required = false) boolean officialEventsOnly,
             @RequestParam(value = "pastEvents", defaultValue = "false", required = false) boolean pastEvents,
+            @RequestParam(value = "futureEvents", defaultValue = "false", required = false) boolean futureEvents,
             @RequestHeader(value = "X-Request-ID", required = false) String xRequestId
     ) {
         log.info("getEvents [{}]", xRequestId);
 
-        Page<Event> events = eventManagementService.getEvents(page, pageSize, sortField, sortOrder, officialEventsOnly, pastEvents);
+        Page<Event> events = eventManagementService.getEvents(page, pageSize, sortField, sortOrder, officialEventsOnly, pastEvents, futureEvents);
 
         return new ResponseEntity<>(events, HttpStatus.OK);
     }
@@ -59,29 +61,40 @@ public class EventManagementController {
         return new ResponseEntity<>(event, HttpStatus.OK);
     }
 
-    @RequestMapping(method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @RequestMapping(method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> createEvent(
-            @RequestPart("event") Event inputEvent,
-            @RequestPart("image") MultipartFile imageFile,
+            @RequestBody Event inputEvent,
             @RequestHeader(value = "X-Request-ID", required = false) String xRequestId
     ) {
         log.info("createEvent [{}] {}", xRequestId, inputEvent);
 
-        Event event = eventManagementService.createEvent(inputEvent, imageFile);
+        Event event = eventManagementService.createEvent(inputEvent);
 
         return new ResponseEntity<>(event, HttpStatus.CREATED);
     }
 
-    @RequestMapping(value = "/{slug}", method = RequestMethod.PATCH, produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @RequestMapping(value = "/image", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> uploadEventImage (
+            @RequestPart("event-slug") String eventSlug,
+            @RequestPart("image") MultipartFile imageFile,
+            @RequestHeader(value = "X-Request-ID", required = false) String xRequestId
+    ) {
+        log.info("uploadEventImage [{}] {}", xRequestId, eventSlug);
+
+        Event event = eventManagementService.uploadEventImage(eventSlug, imageFile);
+
+        return new ResponseEntity<>(event, HttpStatus.CREATED);
+    }
+
+    @RequestMapping(value = "/{slug}", method = RequestMethod.PATCH, produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> patchEvent(
             @PathVariable("slug") String eventSlug,
-            @RequestPart("patch") List<JsonPatchOperation> patches,
-            @RequestPart(value = "image", required = false) MultipartFile imageFile,
+            @RequestBody List<JsonPatchOperation> patches,
             @RequestHeader(value = "X-Request-ID", required = false) String xRequestId
     ) {
         log.info("patchArtist [{}] {}", xRequestId, eventSlug);
 
-        final Event event = eventManagementService.patchEvent(patches, imageFile, eventSlug);
+        final Event event = eventManagementService.patchEvent(patches, eventSlug);
 
         return new ResponseEntity<>(event, HttpStatus.OK);
     }

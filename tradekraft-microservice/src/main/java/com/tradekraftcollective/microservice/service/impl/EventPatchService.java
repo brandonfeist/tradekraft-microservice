@@ -2,6 +2,8 @@ package com.tradekraftcollective.microservice.service.impl;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.github.fge.jsonpatch.*;
 import com.tradekraftcollective.microservice.constants.PatchOperationConstants;
 import com.tradekraftcollective.microservice.exception.ErrorCode;
@@ -61,6 +63,18 @@ public class EventPatchService implements IEventPatchService {
         }
 
         JsonNode eventJsonNode = objectMapper.valueToTree(event);
+
+        ArrayNode artistArray = ((ArrayNode) eventJsonNode.get("artists"));
+
+        for(int artistIndex = 0; artistIndex < artistArray.size(); artistIndex++) {
+            ((ObjectNode) artistArray.get(artistIndex)).remove("image");
+
+            ((ObjectNode) artistArray.get(artistIndex)).remove("releases");
+        }
+
+        ((ObjectNode) eventJsonNode).put("artists", artistArray);
+
+        ((ObjectNode) eventJsonNode).put("image", event.getImageName());
 
         try {
             JsonPatch patcher = new JsonPatch(patchOperations);
