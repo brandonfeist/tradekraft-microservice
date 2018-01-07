@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.*;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.tradekraftcollective.microservice.persistence.entity.media.ArtistImage;
 import com.tradekraftcollective.microservice.strategy.ImageSize;
 import lombok.*;
 import org.hibernate.validator.constraints.NotBlank;
@@ -52,8 +53,13 @@ public class Artist {
     @Column(name = "description")
     private String description;
 
-    @Column(name = "image", nullable = false)
-    private String image;
+//    @Column(name = "image", nullable = false)
+//    private String image;
+
+    @OneToMany(mappedBy = "artist")
+    @MapKey(name = "name")
+    @JsonIgnoreProperties("artist")
+    private Map<String, ArtistImage> images;
 
     @Column(name = "soundcloud")
     private String soundcloud;
@@ -156,26 +162,29 @@ public class Artist {
     public String getAWSKey() { return (ARTIST_IMAGE_UPLOAD_PATH + this.slug + "/"); }
 
     @JsonIgnore
-    public String getImageName() {
-        return image;
-    }
+    public String getAWSUrl() { return (ARTIST_AWS_URL + this.slug + "/"); }
 
-    public ObjectNode getImage() {
-        ObjectMapper objectMapper = new ObjectMapper();
-        ObjectNode objectNode = objectMapper.createObjectNode();
+//    @JsonIgnore
+//    public String getImageName() {
+//        return image;
+//    }
 
-        for (ImageSize imageSize : getImageSizes()) {
-            if (imageSize.getSizeName().equals("original")) {
-                objectNode.put(imageSize.getSizeName(),
-                        (ARTIST_AWS_URL + slug + "/" + image));
-            } else {
-                objectNode.put(imageSize.getSizeName(),
-                        (ARTIST_AWS_URL + slug + "/" + imageSize.getSizeName() + "_" + image));
-            }
-        }
-
-        return objectNode;
-    }
+//    public ObjectNode getImage() {
+//        ObjectMapper objectMapper = new ObjectMapper();
+//        ObjectNode objectNode = objectMapper.createObjectNode();
+//
+//        for (ImageSize imageSize : getImageSizes()) {
+//            if (imageSize.getSizeName().equals("original")) {
+//                objectNode.put(imageSize.getSizeName(),
+//                        (ARTIST_AWS_URL + slug + "/" + image));
+//            } else {
+//                objectNode.put(imageSize.getSizeName(),
+//                        (ARTIST_AWS_URL + slug + "/" + imageSize.getSizeName() + "_" + image));
+//            }
+//        }
+//
+//        return objectNode;
+//    }
 
     @PrePersist
     protected void onCreate() {
@@ -211,7 +220,7 @@ public class Artist {
         return id == artist.id &&
                 Objects.equals(name, artist.name) &&
                 Objects.equals(description, artist.description) &&
-                Objects.equals(image, artist.image) &&
+                Objects.equals(images, artist.images) &&
                 Objects.equals(soundcloud, artist.soundcloud) &&
                 Objects.equals(facebook, artist.facebook) &&
                 Objects.equals(instagram, artist.instagram) &&
@@ -224,7 +233,7 @@ public class Artist {
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, name, description, image, soundcloud, facebook,
+        return Objects.hash(id, name, description, images, soundcloud, facebook,
                 instagram, twitter, spotify, slug, events, yearsActive);
     }
 }

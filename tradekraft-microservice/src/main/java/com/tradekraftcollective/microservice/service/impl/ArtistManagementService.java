@@ -10,6 +10,8 @@ import com.tradekraftcollective.microservice.exception.ErrorCode;
 import com.tradekraftcollective.microservice.exception.ServiceException;
 import com.tradekraftcollective.microservice.persistence.entity.Artist;
 import com.tradekraftcollective.microservice.persistence.entity.Year;
+import com.tradekraftcollective.microservice.persistence.entity.media.ArtistImage;
+import com.tradekraftcollective.microservice.repository.IArtistImageRepository;
 import com.tradekraftcollective.microservice.repository.IArtistRepository;
 import com.tradekraftcollective.microservice.repository.IYearRepository;
 import com.tradekraftcollective.microservice.service.AmazonS3Service;
@@ -28,8 +30,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.inject.Inject;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 /**
  * Created by brandonfeist on 9/5/17.
@@ -43,6 +44,9 @@ public class ArtistManagementService implements IArtistManagementService {
 
     @Inject
     IArtistRepository artistRepository;
+
+    @Autowired
+    IArtistImageRepository artistImageRepository;
 
     @Autowired
     IYearRepository yearRepository;
@@ -127,15 +131,33 @@ public class ArtistManagementService implements IArtistManagementService {
 
         deleteAllArtistsImages(artistSlug);
 
-        returnArtist.setImage(imageProcessingUtil.processImageAndUpload(returnArtist.getImageSizes(),
-                (returnArtist.ARTIST_IMAGE_UPLOAD_PATH + returnArtist.getSlug() + "/"),
-                imageFile, 1.0));
+        HashMap<String, ArtistImage> imageHash = imageProcessingUtil.processImageHashAndUpload(returnArtist.getImageSizes(),
+                returnArtist.getAWSKey(), returnArtist.getAWSUrl(),
+                imageFile, 1.0, ArtistImage.class);
+
+        saveImagesToRepo(imageHash, returnArtist);
+
+        returnArtist.setImages(imageHash);
 
         returnArtist = artistRepository.save(returnArtist);
 
         logger.info("***** SUCCESSFULLY UPLOADED IMAGE FOR ARTIST = {} *****", returnArtist.getSlug());
 
         return returnArtist;
+    }
+
+    private void saveImagesToRepo(HashMap<String, ArtistImage> map, Artist artist) {
+        Iterator it = map.entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry pair = (Map.Entry)it.next();
+
+            ArtistImage image = (ArtistImage) pair.getValue();
+            image.setArtist(artist);
+
+            artistImageRepository.save((ArtistImage) pair.getValue());
+
+            it.remove();
+        }
     }
 
     @Override

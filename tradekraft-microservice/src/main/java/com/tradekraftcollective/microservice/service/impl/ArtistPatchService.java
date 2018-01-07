@@ -77,8 +77,6 @@ public class ArtistPatchService implements IArtistPatchService {
 
         ((ObjectNode) artistJsonNode).remove("releases");
 
-        ((ObjectNode) artistJsonNode).put("image", artist.getImageName());
-
         try {
             JsonPatch patcher = new JsonPatch(patchOperations);
             artistJsonNode = patcher.apply(artistJsonNode);
