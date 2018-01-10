@@ -2,8 +2,7 @@ package com.tradekraftcollective.microservice.persistence.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.tradekraftcollective.microservice.persistence.entity.media.EventImage;
 import com.tradekraftcollective.microservice.strategy.ImageSize;
 import lombok.AccessLevel;
 import lombok.Data;
@@ -47,8 +46,10 @@ public class Event {
     @Column(name = "name", nullable = false)
     private String name;
 
-    @Column(name = "image", nullable = false)
-    private String image;
+    @OneToMany(mappedBy = "event")
+    @MapKey(name = "name")
+    @JsonIgnoreProperties("event")
+    private Map<String, EventImage> images;
 
     @Column(name = "description")
     private String description;
@@ -112,26 +113,7 @@ public class Event {
     public String getAWSKey() { return (EVENT_IMAGE_UPLOAD_PATH + this.slug + "/"); }
 
     @JsonIgnore
-    public String getImageName() {
-        return image;
-    }
-
-    public ObjectNode getImage() {
-        ObjectMapper objectMapper = new ObjectMapper();
-        ObjectNode objectNode = objectMapper.createObjectNode();
-
-        for (ImageSize imageSize : getImageSizes()) {
-            if (imageSize.getSizeName().equals("original")) {
-                objectNode.put(imageSize.getSizeName(),
-                        (EVENT_AWS_URL + slug + "/" + image));
-            } else {
-                objectNode.put(imageSize.getSizeName(),
-                        (EVENT_AWS_URL + slug + "/" + imageSize.getSizeName() + "_" + image));
-            }
-        }
-
-        return objectNode;
-    }
+    public String getAWSUrl() { return (EVENT_AWS_URL + this.slug + "/"); }
 
     @PrePersist
     protected void onCreate() {
@@ -157,7 +139,7 @@ public class Event {
                 Double.doubleToLongBits(longitude) == Double.doubleToLongBits(event.longitude) &&
                 Objects.equals(name, event.name) &&
                 Objects.equals(description, event.description) &&
-                Objects.equals(image, event.image) &&
+                Objects.equals(images, event.images) &&
                 Objects.equals(ticketLink, event.ticketLink) &&
                 Objects.equals(entryAge, event.entryAge) &&
                 Objects.equals(venueName, event.venueName) &&
@@ -173,7 +155,7 @@ public class Event {
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, officialEvent, latitude, longitude, name, description, image,
+        return Objects.hash(id, officialEvent, latitude, longitude, name, description, images,
                 ticketLink, entryAge, venueName, address, city, state, zip, country, startDateTime, endDateTime,
                 slug);
     }

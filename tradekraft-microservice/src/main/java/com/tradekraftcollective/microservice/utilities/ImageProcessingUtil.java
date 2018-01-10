@@ -1,6 +1,5 @@
 package com.tradekraftcollective.microservice.utilities;
 
-import com.tradekraftcollective.microservice.persistence.entity.media.ArtistImage;
 import com.tradekraftcollective.microservice.persistence.entity.media.Image;
 import com.tradekraftcollective.microservice.service.AmazonS3Service;
 import com.tradekraftcollective.microservice.strategy.ImageSize;
@@ -83,11 +82,13 @@ public class ImageProcessingUtil {
                     amazonS3Service.upload(resizeToLimit(imageSize.getWidth(), imageSize.getHeight(), imageQuality, imageFile, tmpFile),
                             uploadPath, fileName);
 
+                    BufferedImage bufferedImage = ImageIO.read(tmpFile);
+
                     T newImage = type.newInstance();
                     newImage.setName(imageSize.getSizeName());
                     newImage.setLink(AWSUrl + fileName);
-                    newImage.setWidth(imageSize.getWidth());
-                    newImage.setHeight(imageSize.getHeight());
+                    newImage.setWidth(bufferedImage.getWidth());
+                    newImage.setHeight(bufferedImage.getHeight());
 
                     returnMap.put(imageSize.getSizeName(), newImage);
 
@@ -102,11 +103,13 @@ public class ImageProcessingUtil {
                     amazonS3Service.upload(resizeToLimit(imageSize.getWidth(), imageSize.getHeight(), imageQuality, imageFile, tmpFile),
                             uploadPath, (imageSize.getSizeName() + "_" + fileName ));
 
+                    BufferedImage bufferedImage = ImageIO.read(tmpFile);
+
                     T newImage = type.newInstance();
                     newImage.setName(imageSize.getSizeName());
                     newImage.setLink(AWSUrl + (imageSize.getSizeName() + "_" + fileName ));
-                    newImage.setWidth(imageSize.getWidth());
-                    newImage.setHeight(imageSize.getHeight());
+                    newImage.setWidth(bufferedImage.getWidth());
+                    newImage.setHeight(bufferedImage.getHeight());
 
                     returnMap.put(imageSize.getSizeName(), newImage);
 

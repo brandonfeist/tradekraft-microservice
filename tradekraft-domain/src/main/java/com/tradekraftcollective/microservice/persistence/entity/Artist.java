@@ -53,9 +53,6 @@ public class Artist {
     @Column(name = "description")
     private String description;
 
-//    @Column(name = "image", nullable = false)
-//    private String image;
-
     @OneToMany(mappedBy = "artist")
     @MapKey(name = "name")
     @JsonIgnoreProperties("artist")
@@ -163,28 +160,6 @@ public class Artist {
 
     @JsonIgnore
     public String getAWSUrl() { return (ARTIST_AWS_URL + this.slug + "/"); }
-
-//    @JsonIgnore
-//    public String getImageName() {
-//        return image;
-//    }
-
-//    public ObjectNode getImage() {
-//        ObjectMapper objectMapper = new ObjectMapper();
-//        ObjectNode objectNode = objectMapper.createObjectNode();
-//
-//        for (ImageSize imageSize : getImageSizes()) {
-//            if (imageSize.getSizeName().equals("original")) {
-//                objectNode.put(imageSize.getSizeName(),
-//                        (ARTIST_AWS_URL + slug + "/" + image));
-//            } else {
-//                objectNode.put(imageSize.getSizeName(),
-//                        (ARTIST_AWS_URL + slug + "/" + imageSize.getSizeName() + "_" + image));
-//            }
-//        }
-//
-//        return objectNode;
-//    }
 
     @PrePersist
     protected void onCreate() {

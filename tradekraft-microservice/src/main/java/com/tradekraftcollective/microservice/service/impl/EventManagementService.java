@@ -10,7 +10,9 @@ import com.tradekraftcollective.microservice.exception.ErrorCode;
 import com.tradekraftcollective.microservice.exception.ServiceException;
 import com.tradekraftcollective.microservice.persistence.entity.Artist;
 import com.tradekraftcollective.microservice.persistence.entity.Event;
+import com.tradekraftcollective.microservice.persistence.entity.media.EventImage;
 import com.tradekraftcollective.microservice.repository.IArtistRepository;
+import com.tradekraftcollective.microservice.repository.IEventImageRepository;
 import com.tradekraftcollective.microservice.repository.IEventRepository;
 import com.tradekraftcollective.microservice.service.AmazonS3Service;
 import com.tradekraftcollective.microservice.service.IEventManagementService;
@@ -20,6 +22,7 @@ import com.tradekraftcollective.microservice.specification.SearchCriteria;
 import com.tradekraftcollective.microservice.utilities.ImageProcessingUtil;
 import com.tradekraftcollective.microservice.validator.EventValidator;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -30,9 +33,11 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.inject.Inject;
+import javax.validation.ConstraintViolationException;
 import java.io.IOException;
 import java.sql.Timestamp;
 import java.util.*;
+import java.util.logging.Level;
 
 /**
  * Created by brandonfeist on 9/28/17.
@@ -45,6 +50,9 @@ public class EventManagementService implements IEventManagementService {
 
     @Inject
     IEventRepository eventRepository;
+
+    @Autowired
+    IEventImageRepository eventImageRepository;
 
     @Inject
     EventValidator eventValidator;
@@ -123,15 +131,33 @@ public class EventManagementService implements IEventManagementService {
 
         deleteAllEventImages(eventSlug);
 
-        returnEvent.setImage(imageProcessingUtil.processImageAndUpload(returnEvent.getImageSizes(),
-                (returnEvent.EVENT_IMAGE_UPLOAD_PATH + returnEvent.getSlug() + "/"),
-                imageFile, 1.0));
+        HashMap<String, EventImage> imageHash = imageProcessingUtil.processImageHashAndUpload(returnEvent.getImageSizes(),
+                returnEvent.getAWSKey(), returnEvent.getAWSUrl(),
+                imageFile, 1.0, EventImage.class);
+
+        saveImagesToRepo(imageHash, returnEvent);
+
+        returnEvent.setImages(imageHash);
 
         returnEvent = eventRepository.save(returnEvent);
 
         log.info("***** SUCCESSFULLY UPLOADED IMAGE FOR EVENT = {} *****", returnEvent.getSlug());
 
         return returnEvent;
+    }
+
+    private void saveImagesToRepo(HashMap<String, EventImage> map, Event event) {
+        Iterator it = map.entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry pair = (Map.Entry)it.next();
+
+            EventImage image = (EventImage) pair.getValue();
+            image.setEvent(event);
+
+            eventImageRepository.save((EventImage) pair.getValue());
+
+            it.remove();
+        }
     }
 
     @Override

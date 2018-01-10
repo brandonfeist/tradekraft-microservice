@@ -67,14 +67,10 @@ public class EventPatchService implements IEventPatchService {
         ArrayNode artistArray = ((ArrayNode) eventJsonNode.get("artists"));
 
         for(int artistIndex = 0; artistIndex < artistArray.size(); artistIndex++) {
-            ((ObjectNode) artistArray.get(artistIndex)).remove("image");
-
             ((ObjectNode) artistArray.get(artistIndex)).remove("releases");
         }
 
         ((ObjectNode) eventJsonNode).put("artists", artistArray);
-
-        ((ObjectNode) eventJsonNode).put("image", event.getImageName());
 
         try {
             JsonPatch patcher = new JsonPatch(patchOperations);
