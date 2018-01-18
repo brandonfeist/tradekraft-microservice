@@ -70,7 +70,7 @@ public class EventPatchService implements IEventPatchService {
             ((ObjectNode) artistArray.get(artistIndex)).remove("releases");
         }
 
-        ((ObjectNode) eventJsonNode).put("artists", artistArray);
+        ((ObjectNode) eventJsonNode).replace("artists", artistArray);
 
         try {
             JsonPatch patcher = new JsonPatch(patchOperations);

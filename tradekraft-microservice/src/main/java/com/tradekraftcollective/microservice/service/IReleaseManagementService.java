@@ -13,7 +13,9 @@ public interface IReleaseManagementService {
 
     Release getRelease(String releaseSlug);
 
-    Release createRelease(Release release, MultipartFile imageFile, MultipartFile[] songFiles);
+    Release createRelease(Release release);
+
+    Release uploadReleaseImage(String releaseSlug, MultipartFile imageFile);
 
     void deleteRelease(String releaseSlug);
 }

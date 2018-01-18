@@ -127,9 +127,11 @@ public class EventManagementService implements IEventManagementService {
     public Event uploadEventImage(String eventSlug, MultipartFile imageFile) {
         log.info("Uploading image for event slug [{}]", eventSlug);
 
+        eventValidator.validateEventSlug(eventSlug);
+
         Event returnEvent = eventRepository.findBySlug(eventSlug);
 
-        deleteAllEventImages(eventSlug);
+        deleteAllEventImages(returnEvent);
 
         HashMap<String, EventImage> imageHash = imageProcessingUtil.processImageHashAndUpload(returnEvent.getImageSizes(),
                 returnEvent.getAWSKey(), returnEvent.getAWSUrl(),
@@ -245,12 +247,11 @@ public class EventManagementService implements IEventManagementService {
     public void deleteEvent(String eventSlug) {
         log.info("Delete event, slug: {}", eventSlug);
 
+        Event event = eventRepository.findBySlug(eventSlug);
+
         eventValidator.validateEventSlug(eventSlug);
 
-        ObjectListing directoryImages = amazonS3Service.getDirectoryContent((EVENT_IMAGE_PATH + eventSlug + "/"), null);
-        for (S3ObjectSummary summary: directoryImages.getObjectSummaries()) {
-            amazonS3Service.delete(summary.getKey());
-        }
+        deleteAllEventImages(event);
 
         eventRepository.deleteBySlug(eventSlug);
 
@@ -319,20 +320,17 @@ public class EventManagementService implements IEventManagementService {
     }
 
     private void deleteAllEventImages(Event event) {
+        Map<String, EventImage> eventImages = event.getImages();
+
         ObjectListing directoryImages = amazonS3Service.getDirectoryContent(event.getAWSKey(), null);
         for (S3ObjectSummary summary: directoryImages.getObjectSummaries()) {
             if(amazonS3Service.doesObjectExist(summary.getKey())) {
                 amazonS3Service.delete(summary.getKey());
             }
         }
-    }
 
-    private void deleteAllEventImages(String eventSlug) {
-        ObjectListing directoryImages = amazonS3Service.getDirectoryContent((EVENT_IMAGE_PATH + eventSlug + "/"), null);
-        for (S3ObjectSummary summary: directoryImages.getObjectSummaries()) {
-            if(amazonS3Service.doesObjectExist(summary.getKey())) {
-                amazonS3Service.delete(summary.getKey());
-            }
+        for (Map.Entry<String, EventImage> entry : eventImages.entrySet()) {
+            eventImageRepository.delete(entry.getValue());
         }
     }
 }

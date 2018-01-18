@@ -4,15 +4,14 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.tradekraftcollective.microservice.persistence.entity.media.EventImage;
+import com.tradekraftcollective.microservice.persistence.entity.media.ReleaseImage;
 import com.tradekraftcollective.microservice.strategy.ImageSize;
 import lombok.Data;
 import org.hibernate.validator.constraints.NotBlank;
 
 import javax.persistence.*;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 /**
  * Created by brandonfeist on 10/22/17.
@@ -45,8 +44,10 @@ public class Release {
     @Column(name = "name", nullable = false)
     private String name;
 
-    @Column(name = "image", nullable = false)
-    private String image;
+    @OneToMany(mappedBy = "release")
+    @MapKey(name = "name")
+    @JsonIgnoreProperties("release")
+    private Map<String, ReleaseImage> images;
 
     @Column(name = "description")
     private String description;
@@ -93,26 +94,10 @@ public class Release {
     private Date updatedAt;
 
     @JsonIgnore
-    public String getImageName() {
-        return image;
-    }
+    public String getAWSKey() { return (RELEASE_IMAGE_UPLOAD_PATH + this.slug + "/"); }
 
-    public ObjectNode getImage() {
-        ObjectMapper objectMapper = new ObjectMapper();
-        ObjectNode objectNode = objectMapper.createObjectNode();
-
-        for (ImageSize imageSize : getImageSizes()) {
-            if (imageSize.getSizeName().equals("original")) {
-                objectNode.put(imageSize.getSizeName(),
-                        (RELEASE_AWS_URL + slug + "/" + image));
-            } else {
-                objectNode.put(imageSize.getSizeName(),
-                        (RELEASE_AWS_URL + slug + "/" + imageSize.getSizeName() + "_" + image));
-            }
-        }
-
-        return objectNode;
-    }
+    @JsonIgnore
+    public String getAWSUrl() { return (RELEASE_AWS_URL + this.slug + "/"); }
 
     @PrePersist
     protected void onCreate() {
@@ -135,7 +120,7 @@ public class Release {
         return id == release.id &&
                 Objects.equals(name, release.name) &&
                 Objects.equals(description, release.description) &&
-                Objects.equals(image, release.image) &&
+                Objects.equals(images, release.images) &&
                 Objects.equals(releaseType, release.releaseType) &&
                 Objects.equals(releaseDate, release.releaseDate) &&
                 Objects.equals(soundcloud, release.soundcloud) &&
@@ -149,7 +134,7 @@ public class Release {
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, name, description, image, releaseType, releaseDate,
+        return Objects.hash(id, name, description, images, releaseType, releaseDate,
                 soundcloud, spotify, itunes, appleMusic, googlePlay, appleMusic,
                 slug);
     }

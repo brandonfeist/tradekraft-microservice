@@ -33,11 +33,9 @@ public class ReleaseValidator {
             "single", "ep", "lp"
     };
 
-    public void validateRelease(Release release, MultipartFile image, MultipartFile[] songFiles) {
+    public void validateRelease(Release release) {
         validateReleaseType(release);
         validateReleaseLinks(release);
-        validateReleaseImage(image);
-        songValidator.validateReleaseSongs(release.getSongs(), songFiles);
     }
 
     public void validateReleaseSlug(String releaseSlug) {
@@ -70,7 +68,7 @@ public class ReleaseValidator {
 
     }
 
-    private void validateReleaseImage(MultipartFile image) {
+    public void validateReleaseImage(MultipartFile image) {
         try {
             imageValidationUtil.validateImageExtension(image);
             imageValidationUtil.minimumImageSize(1024, 1024, ImageIO.read(image.getInputStream()));

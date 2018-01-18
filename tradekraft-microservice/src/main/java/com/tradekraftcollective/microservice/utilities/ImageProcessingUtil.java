@@ -78,7 +78,6 @@ public class ImageProcessingUtil {
 
                     tmpFile.createNewFile();
 
-                    resizeToLimit(imageSize.getWidth(), imageSize.getHeight(), imageQuality, imageFile, tmpFile);
                     amazonS3Service.upload(resizeToLimit(imageSize.getWidth(), imageSize.getHeight(), imageQuality, imageFile, tmpFile),
                             uploadPath, fileName);
 

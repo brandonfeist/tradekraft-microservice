@@ -11,6 +11,7 @@ import com.tradekraftcollective.microservice.exception.ServiceException;
 import com.tradekraftcollective.microservice.persistence.entity.Artist;
 import com.tradekraftcollective.microservice.persistence.entity.Year;
 import com.tradekraftcollective.microservice.persistence.entity.media.ArtistImage;
+import com.tradekraftcollective.microservice.persistence.entity.media.EventImage;
 import com.tradekraftcollective.microservice.repository.IArtistImageRepository;
 import com.tradekraftcollective.microservice.repository.IArtistRepository;
 import com.tradekraftcollective.microservice.repository.IYearRepository;
@@ -129,7 +130,7 @@ public class ArtistManagementService implements IArtistManagementService {
 
         Artist returnArtist = artistRepository.findBySlug(artistSlug);
 
-        deleteAllArtistsImages(artistSlug);
+        deleteAllArtistsImages(returnArtist);
 
         HashMap<String, ArtistImage> imageHash = imageProcessingUtil.processImageHashAndUpload(returnArtist.getImageSizes(),
                 returnArtist.getAWSKey(), returnArtist.getAWSUrl(),
@@ -245,9 +246,11 @@ public class ArtistManagementService implements IArtistManagementService {
     public void deleteArtist(String artistSlug) {
         logger.info("Delete artist, slug: {}", artistSlug);
 
+        Artist artist = artistRepository.findBySlug(artistSlug);
+
         artistValidator.validateArtistSlug(artistSlug);
 
-        deleteAllArtistsImages(artistSlug);
+        deleteAllArtistsImages(artist);
 
         artistRepository.deleteBySlug(artistSlug);
 
@@ -285,20 +288,17 @@ public class ArtistManagementService implements IArtistManagementService {
     }
 
     private void deleteAllArtistsImages(Artist artist) {
+        Map<String, ArtistImage> artistImages = artist.getImages();
+
         ObjectListing directoryImages = amazonS3Service.getDirectoryContent(artist.getAWSKey(), null);
         for (S3ObjectSummary summary: directoryImages.getObjectSummaries()) {
             if(amazonS3Service.doesObjectExist(summary.getKey())) {
                 amazonS3Service.delete(summary.getKey());
             }
         }
-    }
 
-    private void deleteAllArtistsImages(String artistSlug) {
-        ObjectListing directoryImages = amazonS3Service.getDirectoryContent((ARTIST_IMAGE_PATH + artistSlug + "/"), null);
-        for (S3ObjectSummary summary: directoryImages.getObjectSummaries()) {
-            if(amazonS3Service.doesObjectExist(summary.getKey())) {
-                amazonS3Service.delete(summary.getKey());
-            }
+        for (Map.Entry<String, ArtistImage> entry : artistImages.entrySet()) {
+            artistImageRepository.delete(entry.getValue());
         }
     }
 }

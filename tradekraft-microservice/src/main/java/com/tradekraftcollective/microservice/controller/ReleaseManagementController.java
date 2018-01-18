@@ -1,5 +1,6 @@
 package com.tradekraftcollective.microservice.controller;
 
+import com.tradekraftcollective.microservice.persistence.entity.Artist;
 import com.tradekraftcollective.microservice.persistence.entity.Release;
 import com.tradekraftcollective.microservice.service.IReleaseManagementService;
 import lombok.extern.slf4j.Slf4j;
@@ -58,16 +59,27 @@ public class ReleaseManagementController {
         return new ResponseEntity<>(release, HttpStatus.OK);
     }
 
-    @RequestMapping(method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @RequestMapping(method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> createRelease(
-            @RequestPart("release") Release inputRelease,
-            @RequestPart("image") MultipartFile imageFile,
-            @RequestPart("song_files") MultipartFile[] songFiles, // Need a way to relate the array of song files to array of songs for the release
+            @RequestBody Release inputRelease,
             @RequestHeader(value = "X-Request-ID", required = false) String xRequestId
     ) {
         log.info("createRelease [{}] {}", xRequestId, inputRelease);
 
-        Release release = releaseManagementService.createRelease(inputRelease, imageFile, songFiles);
+        Release release = releaseManagementService.createRelease(inputRelease);
+
+        return new ResponseEntity<>(release, HttpStatus.CREATED);
+    }
+
+    @RequestMapping(value = "/image", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> uploadReleaseImage (
+            @RequestPart("release-slug") String releaseSlug,
+            @RequestPart("image") MultipartFile imageFile,
+            @RequestHeader(value = "X-Request-ID", required = false) String xRequestId
+    ) {
+        log.info("uploadReleaseImage [{}] {}", xRequestId, releaseSlug);
+
+        Release release = releaseManagementService.uploadReleaseImage(releaseSlug, imageFile);
 
         return new ResponseEntity<>(release, HttpStatus.CREATED);
     }

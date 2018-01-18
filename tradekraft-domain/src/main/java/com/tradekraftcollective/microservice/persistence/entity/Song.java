@@ -1,8 +1,7 @@
 package com.tradekraftcollective.microservice.persistence.entity;
 
 import com.fasterxml.jackson.annotation.*;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.tradekraftcollective.microservice.persistence.entity.media.SongFile;
 import com.tradekraftcollective.microservice.strategy.AudioFormat;
 import lombok.*;
 import org.hibernate.validator.constraints.NotBlank;
@@ -46,8 +45,10 @@ public class Song {
     @Column(name = "name", nullable = false)
     private String name;
 
-    @Column(name = "song_file", nullable = false)
-    private String songFile;
+    @OneToMany(mappedBy = "song")
+    @MapKey(name = "name")
+    @JsonIgnoreProperties("song")
+    private Map<String, SongFile> songFiles;
 
     @Column(name = "track_number", nullable = false)
     private Integer trackNumber;
@@ -87,34 +88,6 @@ public class Song {
     @Column(name = "updated_at", nullable = false)
     private Date updatedAt;
 
-    @JsonIgnore
-    public String getSongFileName() {
-        return songFile;
-    }
-
-    public ObjectNode getSongFile() {
-        ObjectMapper objectMapper = new ObjectMapper();
-        ObjectNode objectNode = objectMapper.createObjectNode();
-
-        if(songFile != null) {
-            if(songFile.startsWith("http") || songFile.startsWith("https")) {
-                objectNode.put("external", songFile);
-            } else {
-                for (AudioFormat audioFormat : getAudioFormats()) {
-                    if (audioFormat.getFileName().equals("original")) {
-                        objectNode.put(audioFormat.getExtension(),
-                                (SONG_AWS_URL + slug + "/" + songFile + "." + audioFormat.getExtension()));
-                    } else {
-                        objectNode.put(audioFormat.getExtension(),
-                                (SONG_AWS_URL + slug + "/" + audioFormat.getFileName() + "_" + songFile + "." + audioFormat.getExtension()));
-                    }
-                }
-            }
-        }
-
-        return objectNode;
-    }
-
     @PrePersist
     protected void onCreate() {
         createdAt = new Date();
@@ -125,6 +98,12 @@ public class Song {
     protected void onUpdate() {
         updatedAt = new Date();
     }
+
+    @JsonIgnore
+    public String getAWSKey() { return (SONG_AUDIO_UPLOAD_PATH + this.slug + "/"); }
+
+    @JsonIgnore
+    public String getAWSUrl() { return (SONG_AWS_URL + this.slug + "/"); }
 
     @Override
     public boolean equals(Object obj) {
@@ -137,7 +116,7 @@ public class Song {
                 trackNumber == trackNumber &&
                 bpm == bpm &&
                 Objects.equals(name, song.name) &&
-                Objects.equals(songFile, song.songFile) &&
+                Objects.equals(songFiles, song.songFiles) &&
                 Objects.equals(duration, song.duration) &&
                 Objects.equals(release, song.release) &&
                 Objects.equals(artists, song.artists) &&
@@ -147,7 +126,7 @@ public class Song {
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, trackNumber, bpm, name, songFile, duration,
+        return Objects.hash(id, trackNumber, bpm, name, songFiles, duration,
                 release, artists, genre, slug);
     }
 }

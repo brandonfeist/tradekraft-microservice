@@ -19,6 +19,7 @@ import java.util.*;
 @Entity
 @Data
 @Table(name = "events")
+@Cacheable(false)
 public class Event {
 
     public static final String EVENT_IMAGE_UPLOAD_PATH = "uploads/event/image/";

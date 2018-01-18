@@ -22,34 +22,39 @@ public class SongValidator {
     @Inject
     private IGenreRepository genreRepository;
 
-    public void validateReleaseSongs(List<Song> songs, MultipartFile[] songFiles) {
+//    public void validateReleaseSongs(List<Song> songs, MultipartFile[] songFiles) {
+//
+//        if(songs.size() != songFiles.length) {
+//            log.error("Number of songs and song files mismatch");
+//            throw new ServiceException(ErrorCode.INVALID_SONG_COUNT, "the number of songs: " + songs.size() + " and number of song files: " + songFiles.length + " do not match.");
+//        }
+//
+//        HashMap<String, MultipartFile> songFileHashMap = new HashMap<>();
+//        for(MultipartFile songFile : songFiles) {
+//            songFileHashMap.put(songFile.getOriginalFilename(), songFile);
+//        }
+//
+//        for(Song song : songs) {
+//            validateSong(song, songFileHashMap.get(song.getSongFileName()));
+//        }
+//
+//        validateSongTrackNumbers(songs);
+//    }
+//
+//    public void validateSong(Song song, MultipartFile songFile) {
+//        if(songFile == null) {
+//            log.error("Song file matching given file name does not exist.");
+//            throw new ServiceException(ErrorCode.INVALID_SONG_FILE, "song file with matching file name must be present.");
+//        }
+//
+//        validateIfGenreExists(song);
+//        validateIfArtistExists(song);
+//        validateSongFile(songFile);
+//    }
 
-        if(songs.size() != songFiles.length) {
-            log.error("Number of songs and song files mismatch");
-            throw new ServiceException(ErrorCode.INVALID_SONG_COUNT, "the number of songs: " + songs.size() + " and number of song files: " + songFiles.length + " do not match.");
-        }
-
-        HashMap<String, MultipartFile> songFileHashMap = new HashMap<>();
-        for(MultipartFile songFile : songFiles) {
-            songFileHashMap.put(songFile.getOriginalFilename(), songFile);
-        }
-
-        for(Song song : songs) {
-            validateSong(song, songFileHashMap.get(song.getSongFileName()));
-        }
-
-        validateSongTrackNumbers(songs);
-    }
-
-    public void validateSong(Song song, MultipartFile songFile) {
-        if(songFile == null) {
-            log.error("Song file matching given file name does not exist.");
-            throw new ServiceException(ErrorCode.INVALID_SONG_FILE, "song file with matching file name must be present.");
-        }
-
+    public void validateSong(Song song) {
         validateIfGenreExists(song);
         validateIfArtistExists(song);
-        validateSongFile(songFile);
     }
 
     private void validateIfGenreExists(Song song) {
@@ -67,7 +72,7 @@ public class SongValidator {
         // Check if artist with slug exists
     }
 
-    private void validateSongFile(MultipartFile songFile) {
+    public void validateSongFile(MultipartFile songFile) {
 
     }
 
