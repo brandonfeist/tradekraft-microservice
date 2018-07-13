@@ -50,9 +50,15 @@ public enum ErrorCode {
 
     INVALID_PATCH(HttpStatus.BAD_REQUEST.value(), "Invalid patch"),
 
+    INVALID_REGEX(HttpStatus.BAD_REQUEST.value(), "Regex Error"),
+
     EXTERNAL_SERVICE_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR.value(), "External service, internal server error"),
     EXTERNAL_SERVICE_BAD_REQUEST(HttpStatus.BAD_REQUEST.value(), "External service, bad request"),
-    EXTERNAL_SERVICE_EMPTY_RESPONSE(HttpStatus.NO_CONTENT.value(), "External service, empty response");
+    EXTERNAL_SERVICE_EMPTY_RESPONSE(HttpStatus.NO_CONTENT.value(), "External service, empty response"),
+
+    IO_EXCEPTION(HttpStatus.BAD_REQUEST.value(), "IO Exception"),
+
+    UNSUPPORTED_AUDIO_FORMAT(HttpStatus.UNSUPPORTED_MEDIA_TYPE.value(), "Unsupported audio file format");
 
     private final int errorCode;
 

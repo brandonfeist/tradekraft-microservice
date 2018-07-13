@@ -1,53 +1,34 @@
 package com.tradekraftcollective.microservice.service.impl;
 
-import com.amazonaws.services.s3.model.ObjectListing;
-import com.amazonaws.services.s3.model.S3ObjectSummary;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.fge.jsonpatch.JsonPatchOperation;
 import com.github.slugify.Slugify;
-import com.tradekraftcollective.microservice.constants.PatchOperationConstants;
 import com.tradekraftcollective.microservice.exception.ErrorCode;
 import com.tradekraftcollective.microservice.exception.ServiceException;
 import com.tradekraftcollective.microservice.persistence.entity.Artist;
 import com.tradekraftcollective.microservice.persistence.entity.Year;
-import com.tradekraftcollective.microservice.persistence.entity.media.ArtistImage;
-import com.tradekraftcollective.microservice.persistence.entity.media.EventImage;
-import com.tradekraftcollective.microservice.repository.IArtistImageRepository;
 import com.tradekraftcollective.microservice.repository.IArtistRepository;
 import com.tradekraftcollective.microservice.repository.IYearRepository;
-import com.tradekraftcollective.microservice.service.AmazonS3Service;
 import com.tradekraftcollective.microservice.service.IArtistManagementService;
-import com.tradekraftcollective.microservice.service.IArtistPatchService;
 import com.tradekraftcollective.microservice.service.IYearManagementService;
-import com.tradekraftcollective.microservice.utilities.ImageProcessingUtil;
 import com.tradekraftcollective.microservice.validator.ArtistValidator;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 
 import javax.inject.Inject;
-import java.io.IOException;
 import java.util.*;
 
 /**
  * Created by brandonfeist on 9/5/17.
  */
+@Slf4j
 @Service
 public class ArtistManagementService implements IArtistManagementService {
-    private static final Logger logger = LoggerFactory.getLogger(ArtistManagementService.class);
 
     private static final String DESCENDING = "desc";
-    private static final String ARTIST_IMAGE_PATH = "uploads/artist/image/";
 
     @Inject
     IArtistRepository artistRepository;
-
-    @Autowired
-    IArtistImageRepository artistImageRepository;
 
     @Autowired
     IYearRepository yearRepository;
@@ -55,24 +36,15 @@ public class ArtistManagementService implements IArtistManagementService {
     @Inject
     ArtistValidator artistValidator;
 
-    @Inject
-    IArtistPatchService artistPatchService;
-
     @Autowired
     IYearManagementService yearManagementService;
 
-    @Inject
-    ImageProcessingUtil imageProcessingUtil;
-
-    @Inject
-    AmazonS3Service amazonS3Service;
-
-    @Inject
-    ObjectMapper objectMapper;
-
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Page<Artist> getArtists(int page, int pageSize, String sortField, String sortOrder, String artistQuery, String yearQuery) {
-        logger.info("Fetching artists, page: {} pageSize: {} sortField: {} sortOrder: {}", page, pageSize, sortField, sortOrder);
+        log.info("Fetching artists, page: {} pageSize: {} sortField: {} sortOrder: {}", page, pageSize, sortField, sortOrder);
 
         Sort.Direction order = Sort.Direction.ASC;
         if(sortOrder != null && sortOrder.equalsIgnoreCase(DESCENDING)) {
@@ -81,22 +53,31 @@ public class ArtistManagementService implements IArtistManagementService {
 
         PageRequest request = new PageRequest(page, pageSize, order, sortField);
 
+        Page<Artist> artistPage;
+
         Year year = yearRepository.findByYear(yearQuery);
         if(artistQuery != null && year != null) {
-            return artistRepository.findByNameContainingIgnoreCaseAndYearsActive(artistQuery, year, request);
+            artistPage = artistRepository.findByNameContainingIgnoreCaseAndYearsActive(artistQuery, year, request);
         } else if(artistQuery != null && year == null) {
-            return artistRepository.findByNameContainingIgnoreCase(artistQuery, request);
+            artistPage = artistRepository.findByNameContainingIgnoreCase(artistQuery, request);
         } else if(artistQuery == null && year != null) {
-            return artistRepository.findByYearsActive(year, request);
+            artistPage = artistRepository.findByYearsActive(year, request);
+        } else {
+            artistPage = artistRepository.findAll(request);
         }
 
-        return artistRepository.findAll(request);
+        artistPage.forEach(Artist::convertSongsToReleases);
+
+        return artistPage;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Artist getArtist(String artistSlug) {
         if(artistSlug == null) {
-            logger.error("Artist slug cannot be null");
+            log.error("Artist slug cannot be null");
             throw new ServiceException(ErrorCode.INVALID_ARTIST_SLUG, "artist slug cannot be null.");
         }
 
@@ -104,12 +85,17 @@ public class ArtistManagementService implements IArtistManagementService {
 
         Artist artist = artistRepository.findBySlug(artistSlug);
 
+        artist.convertSongsToReleases();
+
         return artist;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Artist createArtist(Artist artist) {
-        logger.info("Create artist, name: {}", artist.getName());
+        log.info("Create artist, name: {}", artist.getName());
 
         artistValidator.validateArtist(artist);
 
@@ -119,157 +105,72 @@ public class ArtistManagementService implements IArtistManagementService {
 
         Artist returnArtist = artistRepository.save(artist);
 
-        logger.info("***** SUCCESSFULLY CREATED ARTIST WITH SLUG = {} *****", returnArtist.getSlug());
+        log.info("***** SUCCESSFULLY CREATED ARTIST WITH SLUG = {} *****", returnArtist.getSlug());
 
         return returnArtist;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public Artist uploadArtistImage(String artistSlug, MultipartFile imageFile) {
-        logger.info("Uploading image for artist slug [{}]", artistSlug);
+    public Artist updateArtist(Artist artistUpdates, String artistSlug) {
 
-        Artist returnArtist = artistRepository.findBySlug(artistSlug);
-
-        deleteAllArtistsImages(returnArtist);
-
-        HashMap<String, ArtistImage> imageHash = imageProcessingUtil.processImageHashAndUpload(returnArtist.getImageSizes(),
-                returnArtist.getAWSKey(), returnArtist.getAWSUrl(),
-                imageFile, 1.0, ArtistImage.class);
-
-        saveImagesToRepo(imageHash, returnArtist);
-
-        returnArtist.setImages(imageHash);
-
-        returnArtist = artistRepository.save(returnArtist);
-
-        logger.info("***** SUCCESSFULLY UPLOADED IMAGE FOR ARTIST = {} *****", returnArtist.getSlug());
-
-        return returnArtist;
-    }
-
-    private void saveImagesToRepo(HashMap<String, ArtistImage> map, Artist artist) {
-        Iterator it = map.entrySet().iterator();
-        while (it.hasNext()) {
-            Map.Entry pair = (Map.Entry)it.next();
-
-            ArtistImage image = (ArtistImage) pair.getValue();
-            image.setArtist(artist);
-
-            artistImageRepository.save((ArtistImage) pair.getValue());
-
-            it.remove();
-        }
-    }
-
-    @Override
-    @Transactional(rollbackFor = {RuntimeException.class, ServiceException.class, IOException.class})
-    public Artist patchArtist(List<JsonPatchOperation> patchOperations, String artistSlug) {
-
-        Artist oldArtist = artistRepository.findBySlug(artistSlug);
-        if(oldArtist == null) {
-            logger.error("Artist with slug [{}] does not exist", artistSlug);
+        Artist artist = artistRepository.findBySlug(artistSlug);
+        if(artist == null) {
+            log.error("Artist with slug [{}] does not exist", artistSlug);
             throw new ServiceException(ErrorCode.INVALID_ARTIST_SLUG, "Artist with slug [" + artistSlug + "] does not exist");
         }
 
-//        boolean uploadingNewImage = (imageFile != null);
-//        if(uploadingNewImage) {
-//            JsonPatchOperation imageOperation;
-//
-//            try {
-//                if (oldArtist.getImage() != null) {
-//                    logger.info("New image found, creating imagePatch operation: [{}], overwriting image: {}",
-//                            PatchOperationConstants.REPLACE, oldArtist.getImageName());
-//
-//                    String jsonImageReplacePatch = "{\"op\": \"" + PatchOperationConstants.REPLACE + "\", " +
-//                            "\"path\": \"" + ArtistPatchService.ARTIST_IMAGE_PATH + "\", " +
-//                            "\"value\": \"" + imageFile.getOriginalFilename() + "\"}";
-//
-//                    imageOperation = objectMapper.readValue(jsonImageReplacePatch, JsonPatchOperation.class);
-//
-//                    patchOperations.add(imageOperation);
-//                } else {
-//                    logger.info("New image found, creating imagePatch operation: {}", PatchOperationConstants.ADD);
-//
-//                    String jsonImageReplacePatch = "{\"op\": \"" + PatchOperationConstants.ADD + "\", " +
-//                            "\"path\": \"" + ArtistPatchService.ARTIST_IMAGE_PATH + "\", " +
-//                            "\"value\": \"" + imageFile.getOriginalFilename() + "\"}";
-//
-//                    imageOperation = objectMapper.readValue(jsonImageReplacePatch, JsonPatchOperation.class);
-//
-//                    patchOperations.add(imageOperation);
-//                }
-//            } catch(IOException e) {
-//                e.printStackTrace();
-//            }
-//        }
-
-        Artist patchedArtist = artistPatchService.patchArtist(patchOperations, oldArtist);
-
-        if(!oldArtist.getName().equals(patchedArtist.getName())) {
-            patchedArtist.setSlug(createArtistSlug(patchedArtist.getName()));
-
-            ObjectListing directoryImages = amazonS3Service.getDirectoryContent(oldArtist.getAWSKey(), null);
-            for (S3ObjectSummary summary: directoryImages.getObjectSummaries()) {
-                String[] splitKey = summary.getKey().split("/");
-
-                amazonS3Service.moveObject(summary.getKey(), patchedArtist.getAWSKey() + splitKey[splitKey.length - 1]);
-            }
+        if(!artistUpdates.getName().equals(artist.getName())) {
+            artist.setSlug(createArtistSlug(artistUpdates.getName()));
         }
 
-        if(!oldArtist.getYearsActive().equals(patchedArtist.getYearsActive())) {
-            patchedArtist.setYearsActive(yearManagementService.getExistingYears(patchedArtist.getYearsActive()));
-        }
+        artist = artistUpdates(artist, artistUpdates);
 
-//        if(uploadingNewImage) {
-//            artistValidator.validateArtist(patchedArtist, imageFile);
-//
-//            ObjectListing directoryImages = amazonS3Service.getDirectoryContent((ARTIST_IMAGE_PATH + artistSlug + "/"), null);
-//            for (S3ObjectSummary summary: directoryImages.getObjectSummaries()) {
-//                amazonS3Service.delete(summary.getKey());
-//            }
-//
-//            patchedArtist.setImage(imageProcessingUtil.processImageAndUpload(patchedArtist.getImageSizes(),
-//                    (patchedArtist.ARTIST_IMAGE_UPLOAD_PATH + patchedArtist.getSlug() + "/"),
-//                    imageFile, 1.0));
-//        } else {
-        artistValidator.validateArtist(patchedArtist);
-//        }
+        artistValidator.validateArtist(artist);
 
-        artistRepository.save(patchedArtist);
+        artistRepository.save(artist);
 
-        logger.info("***** SUCCESSFULLY PATCHED ARTIST WITH SLUG = {} *****", patchedArtist.getSlug());
+        log.info("***** SUCCESSFULLY UPDATED ARTIST WITH SLUG = {} *****", artist.getSlug());
 
-        return patchedArtist;
+        return artist;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void deleteArtist(String artistSlug) {
-        logger.info("Delete artist, slug: {}", artistSlug);
-
-        Artist artist = artistRepository.findBySlug(artistSlug);
+        log.info("Delete artist, slug: {}", artistSlug);
 
         artistValidator.validateArtistSlug(artistSlug);
 
-        deleteAllArtistsImages(artist);
-
         artistRepository.deleteBySlug(artistSlug);
 
-        logger.info("***** SUCCESSFULLY DELETED ARTIST WITH SLUG = {} *****", artistSlug);
+        log.info("***** SUCCESSFULLY DELETED ARTIST WITH SLUG = {} *****", artistSlug);
     }
 
     private String createArtistSlug(String artistName) {
         Slugify slug = new Slugify();
         String result = slug.slugify(artistName);
 
-        int duplicateSlugs = artistRepository.findBySlugStartingWith(result).size();
-        return duplicateSlugs > 0 ? result.concat("-" + (duplicateSlugs + 1)) : result;
+        List<Artist> duplicateArtists = artistRepository.findBySlugStartingWith(result);
+
+        for(Artist artist : duplicateArtists) {
+            if(artist.getSlug().equals(result)) {
+                return result.concat("-" + (duplicateArtists.size() + 1));
+            }
+        }
+
+        return result;
     }
 
     private List<Year> retrieveActiveYears(Artist artist) {
         List<Year> artistYears = artist.getYearsActive();
         List<Year> years = new ArrayList<>();
 
-        if(artistYears == null) {
+        if(artistYears == null || artistYears.isEmpty()) {
             return null;
         }
 
@@ -287,18 +188,17 @@ public class ArtistManagementService implements IArtistManagementService {
         return years;
     }
 
-    private void deleteAllArtistsImages(Artist artist) {
-        Map<String, ArtistImage> artistImages = artist.getImages();
+    private Artist artistUpdates(Artist originalArtist, final Artist artistUpdates) {
+        originalArtist.setName(artistUpdates.getName());
+        originalArtist.setDescription(artistUpdates.getDescription());
+        originalArtist.setImage(artistUpdates.getImage());
+        originalArtist.setSoundcloud(artistUpdates.getSoundcloud());
+        originalArtist.setFacebook(artistUpdates.getFacebook());
+        originalArtist.setTwitter(artistUpdates.getTwitter());
+        originalArtist.setInstagram(artistUpdates.getInstagram());
+        originalArtist.setSpotify(artistUpdates.getSpotify());
+        originalArtist.setYearsActive(retrieveActiveYears(artistUpdates));
 
-        ObjectListing directoryImages = amazonS3Service.getDirectoryContent(artist.getAWSKey(), null);
-        for (S3ObjectSummary summary: directoryImages.getObjectSummaries()) {
-            if(amazonS3Service.doesObjectExist(summary.getKey())) {
-                amazonS3Service.delete(summary.getKey());
-            }
-        }
-
-        for (Map.Entry<String, ArtistImage> entry : artistImages.entrySet()) {
-            artistImageRepository.delete(entry.getValue());
-        }
+        return originalArtist;
     }
 }

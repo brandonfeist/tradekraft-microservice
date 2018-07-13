@@ -23,28 +23,44 @@ import java.util.Map;
 public class ImageValidationUtil {
     private final Map<String, String> imageExtensionWhitelist;
 
+    /**
+     * Default constructor for ImageValidationUtil, sets valid image extensions map.
+     */
     public ImageValidationUtil() {
         imageExtensionWhitelist = new HashMap<>();
         imageExtensionWhitelist.put("jpg", "jpg"); imageExtensionWhitelist.put("jpeg", "jpeg");
         imageExtensionWhitelist.put("gif", "gif"); imageExtensionWhitelist.put("png", "png");
     }
 
+    /**
+     * Validates if given image file is larger or equal to the given height and width.
+     *
+     * @param width The minimum image width
+     * @param height The minimum image height
+     * @param image The BufferedImage to be validated
+     */
     public void minimumImageSize(int width, int height, BufferedImage image) {
-        if(image.getWidth() < width || image.getHeight() < height) {
+        if((width > 0 && image.getWidth() < width) || (height > 0 && image.getHeight() < height)) {
             log.error("Invalid image dimensions ({}, {}) must be at least ({}, {})",
                     image.getWidth(), image.getHeight(), width, height);
+
             throw new ServiceException(ErrorCode.INVALID_IMAGE_DEMINSIONS,
                     String.format("image dimensions must be at least [%s, %s]", width, height));
         }
     }
 
+    /**
+     * Checks MultipartFile to validate if it has a valid image extension.
+     *
+     * @param image The multipart file to be validated
+     */
     public void validateImageExtension(MultipartFile image) {
         try {
             ImageInputStream imageInputStream = ImageIO.createImageInputStream(image.getInputStream());
 
             Iterator<ImageReader> imageReaders = ImageIO.getImageReaders(imageInputStream);
             while (imageReaders.hasNext()) {
-                ImageReader reader = (ImageReader) imageReaders.next();
+                ImageReader reader = imageReaders.next();
                 if (!imageExtensionWhitelist.containsKey(reader.getFormatName().toLowerCase())) {
                     log.error("Invalid image extension.");
                     throw new ServiceException(ErrorCode.INVALID_IMAGE_EXTENSION, "valid extensions are (jpg, jpeg, gif, or png)");

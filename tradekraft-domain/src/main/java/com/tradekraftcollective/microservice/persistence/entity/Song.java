@@ -1,8 +1,7 @@
 package com.tradekraftcollective.microservice.persistence.entity;
 
 import com.fasterxml.jackson.annotation.*;
-import com.tradekraftcollective.microservice.persistence.entity.media.SongFile;
-import com.tradekraftcollective.microservice.strategy.AudioFormat;
+import com.tradekraftcollective.microservice.persistence.entity.media.AudioFile;
 import lombok.*;
 import org.hibernate.validator.constraints.NotBlank;
 import org.hibernate.validator.constraints.NotEmpty;
@@ -16,6 +15,7 @@ import java.util.*;
 @Entity
 @Data
 @Table(name = "songs")
+@Cacheable(false)
 //@JsonIdentityInfo( scope = Song.class,
 //        generator = ObjectIdGenerators.PropertyGenerator.class,
 //        property = "id"
@@ -26,16 +26,6 @@ public class Song {
 
     public static final String SONG_AWS_URL = "https://s3.amazonaws.com/tradekraft-assets/uploads/song/release-song/";
 
-    @JsonIgnore
-    public List<AudioFormat> getAudioFormats() {
-        List<AudioFormat> audioFormats = new ArrayList<>();
-        audioFormats.add(new AudioFormat("96k","libvorbis", "2", "96k", "ogg", "ogg"));
-        audioFormats.add(new AudioFormat("128k","aac", "2", "128k", "adts", "m4a"));
-//        audioFormats.add(new AudioFormat("original","libmp3lame", "2", "192k", "mp3", "mp3"));
-
-        return  audioFormats;
-    }
-
     @Id
     @Column(name = "id", nullable = false)
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -45,16 +35,13 @@ public class Song {
     @Column(name = "name", nullable = false)
     private String name;
 
-    @OneToMany(mappedBy = "song")
-    @MapKey(name = "name")
-    @JsonIgnoreProperties("song")
-    private Map<String, SongFile> songFiles;
+    @NotBlank
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "song_file_uuid")
+    private AudioFile songFile;
 
     @Column(name = "track_number", nullable = false)
     private Integer trackNumber;
-
-    @Column(name = "duration")
-    private String duration;
 
     @Column(name = "bpm")
     private Integer bpm;
@@ -65,14 +52,14 @@ public class Song {
     private Release release;
 
     @OneToMany(mappedBy = "song", cascade = CascadeType.ALL)
-    @JsonIgnoreProperties("song")
+    @JsonIgnoreProperties({"song", "videoFiles", "videoThumbnails"})
     private List<Video> videos;
 
     @NotEmpty
     @JoinTable(name = "artist_songs",
             joinColumns = @JoinColumn(name = "song_id", referencedColumnName = "id"),
             inverseJoinColumns = @JoinColumn(name = "artist_id", referencedColumnName = "id"))
-    @JsonIgnoreProperties({"releases", "events", "songs"})
+    @JsonIgnoreProperties({"artistReleases", "appearsOn", "events", "songs"})
     private List<Artist> artists;
 
     @ManyToOne
@@ -105,6 +92,11 @@ public class Song {
     @JsonIgnore
     public String getAWSUrl() { return (SONG_AWS_URL + this.slug + "/"); }
 
+    @JsonIgnore
+    boolean hasArtist(Artist artist) {
+        return this.artists.contains(artist);
+    }
+
     @Override
     public boolean equals(Object obj) {
         if (obj == this) return true;
@@ -112,12 +104,12 @@ public class Song {
             return false;
         }
         Song song = (Song) obj;
-        return id == song.id &&
-                trackNumber == trackNumber &&
-                bpm == bpm &&
+        return Objects.equals(id, song.id) &&
+                Objects.equals(trackNumber, song.trackNumber) &&
+                Objects.equals(bpm, song.bpm) &&
                 Objects.equals(name, song.name) &&
-                Objects.equals(songFiles, song.songFiles) &&
-                Objects.equals(duration, song.duration) &&
+                Objects.equals(songFile, song.songFile) &&
+                Objects.equals(videos, song.videos) &&
                 Objects.equals(release, song.release) &&
                 Objects.equals(artists, song.artists) &&
                 Objects.equals(genre, song.genre) &&
@@ -126,7 +118,6 @@ public class Song {
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, trackNumber, bpm, name, songFiles, duration,
-                release, artists, genre, slug);
+        return Objects.hash(id, trackNumber, bpm, name, songFile, videos, release, artists, genre, slug);
     }
 }

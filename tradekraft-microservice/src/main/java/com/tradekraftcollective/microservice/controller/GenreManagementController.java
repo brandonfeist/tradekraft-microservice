@@ -67,17 +67,17 @@ public class GenreManagementController {
         return new ResponseEntity<>(genre, HttpStatus.CREATED);
     }
 
-    @RequestMapping(value = "/{id}", method = RequestMethod.PATCH, produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<?> patchGenre(
+    @RequestMapping(value = "/{id}", method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> updateGenre(
             @PathVariable("id") Long genreId,
-            @RequestBody List<JsonPatchOperation> patches,
+            @RequestBody Genre genreUpdates,
             @RequestHeader(value = "X-Request-ID", required = false) String xRequestId
     ) {
-        log.info("patchGenre [{}] {}", xRequestId, genreId);
+        log.info("updateGenre [{}] {}", xRequestId, genreId);
 
-        final Genre genre = genreManagementService.patchGenre(patches, genreId);
+        final Genre artist = genreManagementService.updateGenre(genreUpdates, genreId);
 
-        return new ResponseEntity<>(genre, HttpStatus.OK);
+        return new ResponseEntity<>(artist, HttpStatus.OK);
     }
 
     @RequestMapping(value = "/{id}", method = RequestMethod.DELETE)

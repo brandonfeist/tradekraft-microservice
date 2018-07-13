@@ -21,6 +21,17 @@ public class GenreValidator {
     @Inject
     IGenreRepository genreRepository;
 
+    public Genre validateGenreNameExists(String genreName) {
+        Genre genre = genreRepository.findByName(genreName);
+
+        if(genre == null) {
+            log.error("Genre with name {} does not exists.", genreName);
+            throw new ServiceException(ErrorCode.INVALID_GENRE_NAME, "Genre with name " + genreName + " does not exists.");
+        }
+
+        return genre;
+    }
+
     public void validateGenre(Genre genre) {
         validateGenreColor(genre);
     }

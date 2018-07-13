@@ -1,7 +1,5 @@
 package com.tradekraftcollective.microservice.service.impl;
 
-import com.amazonaws.services.s3.model.ObjectListing;
-import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.github.slugify.Slugify;
 import com.tradekraftcollective.microservice.exception.ErrorCode;
 import com.tradekraftcollective.microservice.exception.ServiceException;
@@ -11,18 +9,22 @@ import com.tradekraftcollective.microservice.model.spotify.SpotifySimpleTrack;
 import com.tradekraftcollective.microservice.persistence.entity.Artist;
 import com.tradekraftcollective.microservice.persistence.entity.Release;
 import com.tradekraftcollective.microservice.persistence.entity.Song;
+import com.tradekraftcollective.microservice.persistence.entity.media.AudioFile;
 import com.tradekraftcollective.microservice.persistence.entity.media.SongFile;
 import com.tradekraftcollective.microservice.repository.*;
-import com.tradekraftcollective.microservice.service.AmazonS3Service;
 import com.tradekraftcollective.microservice.service.ISongManagementService;
 import com.tradekraftcollective.microservice.service.ISpotifyManagementService;
-import com.tradekraftcollective.microservice.utilities.AudioProcessingUtil;
 import com.tradekraftcollective.microservice.utilities.SpotifyUrlUtil;
+import com.tradekraftcollective.microservice.validator.ArtistValidator;
+import com.tradekraftcollective.microservice.validator.GenreValidator;
+import com.tradekraftcollective.microservice.validator.ReleaseValidator;
 import com.tradekraftcollective.microservice.validator.SongValidator;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
 
 import javax.inject.Inject;
 import java.util.*;
@@ -33,25 +35,22 @@ import java.util.*;
 @Slf4j
 @Service
 public class SongManagementService implements ISongManagementService {
-    private static final String SONG_FILE_PATH = "uploads/song/release-song/";
+    private static final String DESCENDING = "desc";
 
     @Inject
     ISongRepository songRepository;
 
     @Autowired
-    IReleaseRepository releaseRepository;
-
-    @Inject
-    IGenreRepository genreRepository;
-
-    @Inject
-    IArtistRepository artistRepository;
-
-    @Autowired
-    ISongFileRepository songFileRepository;
-
-    @Autowired
     SongValidator songValidator;
+
+    @Autowired
+    ReleaseValidator releaseValidator;
+
+    @Autowired
+    GenreValidator genreValidator;
+
+    @Autowired
+    ArtistValidator artistValidator;
 
     @Inject
     ISpotifyManagementService spotifyManagementService;
@@ -60,32 +59,43 @@ public class SongManagementService implements ISongManagementService {
     SpotifyUrlUtil spotifyUrlUtil;
 
     @Inject
-    AudioProcessingUtil audioProcessingUtil;
-
-    @Inject
-    AmazonS3Service amazonS3Service;
-
-    @Inject
     Credentials credentials;
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Page<Song> getSongs(int page, int pageSize, String sortField, String sortOrder) {
+        log.info("Fetching songs, page: {} pageSize: {} sortField: {} sortOrder: {}", page, pageSize, sortField, sortOrder);
+
+        Sort.Direction order = Sort.Direction.ASC;
+        if(sortOrder != null && sortOrder.equalsIgnoreCase(DESCENDING)) {
+            order = Sort.Direction.DESC;
+        }
+
+        PageRequest request = new PageRequest(page, pageSize, order, sortField);
+
+        Page<Song> songPage = songRepository.findAll(request);
+
+        return songPage;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Song createSong(String releaseSlug, Song song) {
-        log.info("Processing song {}", song.getName());
+        log.info("Creating song {}", song.getName());
 
-        Release release = releaseRepository.findBySlug(releaseSlug);
-
-        if(release == null) {
-            log.error("Release with slug [{}] does not exist", releaseSlug);
-            throw new ServiceException(ErrorCode.INVALID_RELEASE_SLUG, "Release with slug [" + releaseSlug + "] does not exist");
-        }
+        Release release = releaseValidator.validateReleaseSlug(releaseSlug);
 
         songValidator.validateSong(song);
 
-        song.setGenre(genreRepository.findByName(song.getGenre().getName()));
+        song.setGenre(genreValidator.validateGenreNameExists(song.getGenre().getName()));
 
         List<Artist> finalArtistList = new ArrayList<>();
         for(Artist artist : song.getArtists()) {
-            finalArtistList.add(artistRepository.findBySlug(artist.getSlug()));
+            finalArtistList.add(artistValidator.validateArtistSlug(artist.getSlug()));
         }
         song.setArtists(finalArtistList);
 
@@ -93,63 +103,28 @@ public class SongManagementService implements ISongManagementService {
 
         song.setSlug(createSongSlug(song.getName()));
 
-        return song;
-    }
+        Song returnSong = songRepository.save(song);
 
-    @Override
-    public Song uploadSongFile(String songSlug, MultipartFile songFile) {
-        log.info("Uploading song file for song slug [{}]", songSlug);
-
-        Song returnSong = songRepository.findBySlug(songSlug);
-
-        if(returnSong == null) {
-            log.error("Song with slug [{}] does not exist", songSlug);
-            throw new ServiceException(ErrorCode.INVALID_SONG_SLUG, "Song with slug [" + songSlug + "] does not exist");
-        }
-
-        songValidator.validateSongFile(songFile);
-
-        deleteAllSongFiles(returnSong);
-
-        HashMap<String, SongFile> songFileHash = audioProcessingUtil.processAudioHashAndUpload(returnSong.getAudioFormats(),
-                returnSong.getRelease(), returnSong, returnSong.getAWSKey(), returnSong.getAWSUrl(), songFile, SongFile.class);
-
-        saveSongFilesToRepo(songFileHash, returnSong);
-
-        returnSong.setSongFiles(songFileHash);
-
-        returnSong = songRepository.save(returnSong);
-
-        log.info("***** SUCCESSFULLY UPLOADED SONG FILE FOR SONG = {} *****", returnSong.getSlug());
+        log.info("***** SUCCESSFULLY CREATED SONG WITH SLUG = {} *****", returnSong.getSlug());
 
         return returnSong;
     }
 
-    private void saveSongFilesToRepo(HashMap<String, SongFile> map, Song song) {
-        Iterator it = map.entrySet().iterator();
-        while (it.hasNext()) {
-            Map.Entry pair = (Map.Entry)it.next();
-
-            SongFile songFile = (SongFile) pair.getValue();
-            songFile.setSong(song);
-
-            songFileRepository.save((SongFile) pair.getValue());
-
-            it.remove();
-        }
-    }
-
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void deleteSong(Song song) {
         log.info("Delete song, name: {}", song.getName());
-
-        deleteAllSongFiles(song);
 
         songRepository.delete(song);
 
         log.info("***** SUCCESSFULLY DELETED SONG WITH SLUG = {} *****", song.getSlug());
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void deleteSong(String songSlug) {
         log.info("Delete song, slug: {}", songSlug);
@@ -161,28 +136,47 @@ public class SongManagementService implements ISongManagementService {
             throw new ServiceException(ErrorCode.INVALID_SONG_SLUG, "Song with slug " + songSlug + " does not exist.");
         }
 
-        deleteAllSongFiles(song);
-
         songRepository.delete(song);
 
         log.info("***** SUCCESSFULLY DELETED SONG WITH SLUG = {} *****", song.getSlug());
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public HashMap<String, MultipartFile> createSongFileHashMap(MultipartFile[] songFiles) {
-        HashMap<String, MultipartFile> songFileHashMap = new HashMap<>();
-        for(MultipartFile songFile : songFiles) {
-            songFileHashMap.put(songFile.getOriginalFilename(), songFile);
+    public Song updateSong(final Song songUpdates, final String songSlug) {
+        Song song = songRepository.findBySlug(songSlug);
+        if(song == null) {
+            log.error("Song with slug [{}] does not exist", songSlug);
+            throw new ServiceException(ErrorCode.INVALID_SONG_SLUG, "Song with slug [" + songSlug + "] does not exist");
         }
 
-        return songFileHashMap;
+        if(!songUpdates.getName().equals(song.getName())) {
+            song.setSlug(createSongSlug(songUpdates.getName()));
+        }
+
+        song = songUpdates(song, songUpdates);
+
+        songValidator.validateSong(song);
+
+        songRepository.save(song);
+
+        log.info("***** SUCCESSFULLY UPDATED SONG WITH SLUG = {} *****", song.getSlug());
+
+        return song;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public List<Song> songLinkAuthorization(Release release) {
-        List<Song> songs = release.getSongs();
+        List<Song> songs = Optional.ofNullable(release)
+                .map(Release::getSongs)
+                .orElse(Collections.emptyList());
 
-        if((credentials.getAuthorization() == null || !credentials.hasPermission("PREMIUM_MUSIC_PERMISSION"))
+        if(release != null && (credentials.getAuthorization() == null || !credentials.hasPermission("PREMIUM_MUSIC_PERMISSION"))
                 && !release.isFreeRelease()) {
             log.info("User does not have access to premium songs...");
 
@@ -215,28 +209,55 @@ public class SongManagementService implements ISongManagementService {
         return songs;
     }
 
+    private Song songUpdates(Song originalSong, final Song songUpdates) {
+        originalSong.setName(songUpdates.getName());
+        originalSong.setSongFile(songUpdates.getSongFile());
+        originalSong.setTrackNumber(songUpdates.getTrackNumber());
+        originalSong.setBpm(songUpdates.getBpm());
+        originalSong.setRelease(songUpdates.getRelease());
+        originalSong.setVideos(songUpdates.getVideos());
+        originalSong.setArtists(songUpdates.getArtists());
+        originalSong.setGenre(songUpdates.getGenre());
+
+        return originalSong;
+    }
+
+    /**
+     * Removes and set song file links to null.
+     *
+     * @param songs Songs to have their song file links removed
+     * @return List of songs with song file links removed
+     */
     private List<Song> removeSongFileLinks(List<Song> songs) {
         List<Song> editedSongs = new ArrayList<>();
         for (Song song : songs) {
-            song.setSongFiles(null);
+            song.setSongFile(null);
             editedSongs.add(song);
         }
 
         return editedSongs;
     }
 
+    /**
+     * Changes the given song's file links to Spotify 30 seconds preview mp3's.
+     *
+     * @param songs Songs to be processed with Spotify mp3 links
+     * @param spotifyTracks The Spotify tracks that relate to given songs
+     * @return List of songs with their song file links replaced with Spotify mp3 links
+     */
     private List<Song> changeSongFileToExternalSpotifyLinks(List<Song> songs, List<SpotifySimpleTrack> spotifyTracks) {
         List<Song> editedSongs = new ArrayList<>();
 
         for(int songIndex = 0; songIndex < songs.size(); songIndex++) {
-            HashMap<String, SongFile> songMap = new HashMap<>();
 
             Song songToEdit = songs.get(songIndex);
 
-            SongFile songFile = new SongFile("external", spotifyTracks.get(songIndex).getPreviewUrl());
-            songMap.put(songFile.getName(), songFile);
+            AudioFile audioFile = songToEdit.getSongFile();
+                    new SongFile("external", spotifyTracks.get(songIndex).getPreviewUrl());
 
-            songToEdit.setSongFiles(songMap);
+            audioFile.setLink(spotifyTracks.get(songIndex).getPreviewUrl());
+
+            songToEdit.setSongFile(audioFile);
 
             editedSongs.add(songToEdit);
         }
@@ -244,26 +265,24 @@ public class SongManagementService implements ISongManagementService {
         return editedSongs;
     }
 
+    /**
+     * Creates a unique song slug.
+     *
+     * @param songName The name of the song
+     * @return A unique song slug
+     */
     private String createSongSlug(String songName) {
         Slugify slug = new Slugify();
         String result = slug.slugify(songName);
 
-        int duplicateSlugs = songRepository.findBySlugStartingWith(result).size();
-        return duplicateSlugs > 0 ? result.concat("-" + (duplicateSlugs + 1)) : result;
-    }
+        List<Song> duplicateSongs = songRepository.findBySlugStartingWith(result);
 
-    private void deleteAllSongFiles(Song song) {
-        Map<String, SongFile> songFiles = song.getSongFiles();
-
-        ObjectListing directoryImages = amazonS3Service.getDirectoryContent(song.getAWSKey(), null);
-        for (S3ObjectSummary summary: directoryImages.getObjectSummaries()) {
-            if(amazonS3Service.doesObjectExist(summary.getKey())) {
-                amazonS3Service.delete(summary.getKey());
+        for(Song song : duplicateSongs) {
+            if(song.getSlug().equals(result)) {
+                return result.concat("-" + (duplicateSongs.size() + 1));
             }
         }
 
-        for (Map.Entry<String, SongFile> entry : songFiles.entrySet()) {
-            songFileRepository.delete(entry.getValue());
-        }
+        return result;
     }
 }

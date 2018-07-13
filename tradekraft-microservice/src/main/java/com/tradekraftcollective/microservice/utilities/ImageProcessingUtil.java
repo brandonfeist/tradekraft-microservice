@@ -1,6 +1,6 @@
 package com.tradekraftcollective.microservice.utilities;
 
-import com.tradekraftcollective.microservice.persistence.entity.media.Image;
+import com.tradekraftcollective.microservice.persistence.entity.media.BaseImage;
 import com.tradekraftcollective.microservice.service.AmazonS3Service;
 import com.tradekraftcollective.microservice.strategy.ImageSize;
 import lombok.extern.slf4j.Slf4j;
@@ -62,64 +62,6 @@ public class ImageProcessingUtil {
         }
 
         return fileName;
-    }
-
-    public <T extends Image> HashMap<String, T> processImageHashAndUpload(List<ImageSize> imageSizes, String uploadPath, String AWSUrl, MultipartFile imageFile, double imageQuality, Class<T> type) {
-        HashMap<String, T> returnMap = new HashMap<>();
-
-        String fileName = imageFile.getOriginalFilename();
-
-        try {
-            for (ImageSize imageSize : imageSizes) {
-                if (imageSize.getSizeName().equals("original")) {
-                    log.debug("Uploading original image size ({}, {})", imageSize.getWidth(), imageSize.getHeight());
-
-                    File tmpFile = new File(fileName);
-
-                    tmpFile.createNewFile();
-
-                    amazonS3Service.upload(resizeToLimit(imageSize.getWidth(), imageSize.getHeight(), imageQuality, imageFile, tmpFile),
-                            uploadPath, fileName);
-
-                    BufferedImage bufferedImage = ImageIO.read(tmpFile);
-
-                    T newImage = type.newInstance();
-                    newImage.setName(imageSize.getSizeName());
-                    newImage.setLink(AWSUrl + fileName);
-                    newImage.setWidth(bufferedImage.getWidth());
-                    newImage.setHeight(bufferedImage.getHeight());
-
-                    returnMap.put(imageSize.getSizeName(), newImage);
-
-                    tmpFile.delete();
-                } else {
-                    log.debug("Uploading {} image size ({}, {})", imageSize.getSizeName(), imageSize.getWidth(), imageSize.getHeight());
-
-                    File tmpFile = new File((imageSize.getSizeName() + "_" + fileName));
-
-                    tmpFile.createNewFile();
-
-                    amazonS3Service.upload(resizeToLimit(imageSize.getWidth(), imageSize.getHeight(), imageQuality, imageFile, tmpFile),
-                            uploadPath, (imageSize.getSizeName() + "_" + fileName ));
-
-                    BufferedImage bufferedImage = ImageIO.read(tmpFile);
-
-                    T newImage = type.newInstance();
-                    newImage.setName(imageSize.getSizeName());
-                    newImage.setLink(AWSUrl + (imageSize.getSizeName() + "_" + fileName ));
-                    newImage.setWidth(bufferedImage.getWidth());
-                    newImage.setHeight(bufferedImage.getHeight());
-
-                    returnMap.put(imageSize.getSizeName(), newImage);
-
-                    tmpFile.delete();
-                }
-            }
-        } catch(IOException | IllegalAccessException | InstantiationException e) {
-            e.printStackTrace();
-        }
-
-        return returnMap;
     }
 
     /**

@@ -1,0 +1,18 @@
+{
+  "name": "Test Release",
+  "image": {
+    "id": 3,
+    "uuid": "efe9449e-6f7c-43ca-92aa-1901293fac93",
+    "link": "https://s3.amazonaws.com/tradekraft-assets/uploads/image/efe9449e-6f7c-43ca-92aa-1901293fac93/2a86964746406356388229ceb1804402f2983c8f.jpg"
+  },
+  "description": "<p>Test description.</p>",
+  "releaseType": "single",
+  "releaseDate": "2018-05-21T19:15:53.183",
+  "soundcloud": "https://soundcloud.com/tradekraftcollective/sets/outlaw-ep",
+  "spotify": "https://open.spotify.com/album/1OzK0zQhU286ricxsIxA1R?si=uPctSkGERYW388F0LUgXog",
+  "itunes": "https://itunes.apple.com/us/album/superbloom-ep/1246503710",
+  "appleMusic": "https://itunes.apple.com/kz/album/superbloom-ep/1246503710",
+  "googlePlay": "https://play.google.com/store/music/artist/Kyla_Fava_Wooshay_Skylark?id=Ahiuschnnkgbhgqeqgixsppllty&hl=en",
+  "amazon": "https://www.amazon.com/October-Remixes-Explicit-Wooshay-activepoet/dp/B076G89HZ5",
+  "freeRelease": true
+}

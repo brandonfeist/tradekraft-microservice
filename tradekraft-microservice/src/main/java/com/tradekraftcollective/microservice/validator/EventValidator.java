@@ -4,14 +4,10 @@ import com.tradekraftcollective.microservice.exception.ErrorCode;
 import com.tradekraftcollective.microservice.exception.ServiceException;
 import com.tradekraftcollective.microservice.persistence.entity.Event;
 import com.tradekraftcollective.microservice.repository.IEventRepository;
-import com.tradekraftcollective.microservice.utilities.ImageValidationUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-import org.springframework.web.multipart.MultipartFile;
 
-import javax.imageio.ImageIO;
 import javax.inject.Inject;
-import java.io.IOException;
 
 /**
  * Created by brandonfeist on 9/28/17.
@@ -26,17 +22,6 @@ public class EventValidator {
     @Inject
     IEventRepository eventRepository;
 
-    @Inject
-    ImageValidationUtil imageValidationUtil;
-
-    public void validateEvent(Event event, MultipartFile image) {
-        validateEventEntryAge(event);
-        validateEventStartAndEndDate(event);
-        validateEventVenueName(event);
-        validateEventAddress(event);
-        validateEventImage(image);
-    }
-
     public void validateEvent(Event event) {
         validateEventEntryAge(event);
         validateEventStartAndEndDate(event);
@@ -44,11 +29,16 @@ public class EventValidator {
         validateEventAddress(event);
     }
 
-    public void validateEventSlug(String eventSlug) {
-        if(eventRepository.findBySlug(eventSlug) == null) {
+    public Event validateEventSlug(String eventSlug) {
+        Event returnEvent = eventRepository.findBySlug(eventSlug);
+
+        if(returnEvent == null) {
             log.error("Event with slug [{}] does not exist", eventSlug);
+
             throw new ServiceException(ErrorCode.INVALID_EVENT_SLUG, "Event with slug [" + eventSlug + "] does not exist");
         }
+
+        return returnEvent;
     }
 
     private void validateEventEntryAge(Event event) {
@@ -108,15 +98,6 @@ public class EventValidator {
         if(event.getCountry() == null || event.getCountry().isEmpty()) {
             log.error("Missing event country.");
             throw new ServiceException(ErrorCode.INVALID_EVENT_ADDRESS, "event country must be present.");
-        }
-    }
-
-    private void validateEventImage(MultipartFile image) {
-        try {
-            imageValidationUtil.validateImageExtension(image);
-            imageValidationUtil.minimumImageSize(1000, 592, ImageIO.read(image.getInputStream()));
-        } catch(IOException e) {
-            e.printStackTrace();
         }
     }
 }

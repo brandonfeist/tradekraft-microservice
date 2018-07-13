@@ -2,7 +2,6 @@ package com.tradekraftcollective.microservice.service;
 
 import com.tradekraftcollective.microservice.persistence.entity.Release;
 import org.springframework.data.domain.Page;
-import org.springframework.web.multipart.MultipartFile;
 
 /**
  * Created by brandonfeist on 10/22/17.
@@ -15,7 +14,7 @@ public interface IReleaseManagementService {
 
     Release createRelease(Release release);
 
-    Release uploadReleaseImage(String releaseSlug, MultipartFile imageFile);
+    Release updateRelease(final Release releaseUpdates, final String releaseSlug);
 
     void deleteRelease(String releaseSlug);
 }

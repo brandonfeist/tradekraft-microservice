@@ -23,12 +23,6 @@ public class ReleaseValidator {
     @Inject
     private IReleaseRepository releaseRepository;
 
-    @Inject
-    private SongValidator songValidator;
-
-    @Inject
-    private ImageValidationUtil imageValidationUtil;
-
     private static final String[] VALID_RELEASE_TYPES = {
             "single", "ep", "lp"
     };
@@ -38,11 +32,15 @@ public class ReleaseValidator {
         validateReleaseLinks(release);
     }
 
-    public void validateReleaseSlug(String releaseSlug) {
-        if(releaseRepository.findBySlug(releaseSlug) == null) {
+    public Release validateReleaseSlug(String releaseSlug) {
+        Release release = releaseRepository.findBySlug(releaseSlug);
+
+        if(release == null) {
             log.error("Release with slug [{}] does not exist", releaseSlug);
             throw new ServiceException(ErrorCode.INVALID_RELEASE_SLUG, "Release with slug [" + releaseSlug + "] does not exist");
         }
+
+        return release;
     }
 
     private void validateReleaseType(Release release) {
@@ -66,14 +64,5 @@ public class ReleaseValidator {
 
     private void validateReleaseLinks(Release release) {
 
-    }
-
-    public void validateReleaseImage(MultipartFile image) {
-        try {
-            imageValidationUtil.validateImageExtension(image);
-            imageValidationUtil.minimumImageSize(1024, 1024, ImageIO.read(image.getInputStream()));
-        } catch(IOException e) {
-            e.printStackTrace();
-        }
     }
 }

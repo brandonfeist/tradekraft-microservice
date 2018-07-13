@@ -4,14 +4,10 @@ import com.tradekraftcollective.microservice.exception.ErrorCode;
 import com.tradekraftcollective.microservice.exception.ServiceException;
 import com.tradekraftcollective.microservice.persistence.entity.Artist;
 import com.tradekraftcollective.microservice.repository.IArtistRepository;
-import com.tradekraftcollective.microservice.utilities.ImageValidationUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-import org.springframework.web.multipart.MultipartFile;
 
-import javax.imageio.ImageIO;
 import javax.inject.Inject;
-import java.io.IOException;
 import java.util.regex.Pattern;
 
 /**
@@ -29,23 +25,19 @@ public class ArtistValidator {
     @Inject
     IArtistRepository artistRepository;
 
-    @Inject
-    ImageValidationUtil imageValidationUtil;
-
-    public void validateArtist(Artist artist, MultipartFile image) {
-        validateArtistLinks(artist);
-        validateArtistImage(image);
-    }
-
     public void validateArtist(Artist artist) {
         validateArtistLinks(artist);
     }
 
-    public void validateArtistSlug(String artistSlug) {
-        if(artistRepository.findBySlug(artistSlug) == null) {
+    public Artist validateArtistSlug(String artistSlug) {
+        Artist artist = artistRepository.findBySlug(artistSlug);
+
+        if(artist == null) {
             log.error("Artist with slug [{}] does not exist", artistSlug);
             throw new ServiceException(ErrorCode.INVALID_ARTIST_SLUG, "Artist with slug [" + artistSlug + "] does not exist");
         }
+
+        return artist;
     }
 
     private void validateArtistLinks(Artist artist) {
@@ -82,15 +74,6 @@ public class ArtistValidator {
 
             log.error("Invalid spotify url [{}]", artist.getSpotify());
             throw new ServiceException(ErrorCode.INVALID_ARTIST_URL, "invalid spotify url.");
-        }
-    }
-
-    public void validateArtistImage(MultipartFile image) {
-        try {
-            imageValidationUtil.validateImageExtension(image);
-            imageValidationUtil.minimumImageSize(1024, 1024, ImageIO.read(image.getInputStream()));
-        } catch(IOException e) {
-            e.printStackTrace();
         }
     }
 }

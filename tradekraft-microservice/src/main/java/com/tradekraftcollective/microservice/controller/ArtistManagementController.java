@@ -1,10 +1,10 @@
 package com.tradekraftcollective.microservice.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.fge.jsonpatch.JsonPatchOperation;
+import com.tradekraftcollective.microservice.constants.ImageFileTypeConstants;
 import com.tradekraftcollective.microservice.persistence.entity.Artist;
-import com.tradekraftcollective.microservice.repository.IArtistRepository;
+import com.tradekraftcollective.microservice.persistence.entity.media.Image;
 import com.tradekraftcollective.microservice.service.IArtistManagementService;
+import com.tradekraftcollective.microservice.service.IImageManagementService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -15,8 +15,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.inject.Inject;
-import java.io.IOException;
-import java.util.List;
 
 /**
  * Created by brandonfeist on 9/12/17.
@@ -26,18 +24,21 @@ import java.util.List;
 @RequestMapping("/v1/artists")
 public class ArtistManagementController {
     private static final String DEFAULT_PAGE_NUM = "0";
-    private static final String DEFAULT_PAGE_SIZE = "100";
+    private static final String DEFAULT_PAGE_SIZE = "4";
     private static final String SORT_ORDER_DESC = "asc";
     private static final String SORT_FIELD_NAME = "name";
 
+    private static final int MIN_IMAGE_HEIGHT = 1024;
+    private static final int MIN_IMAGE_WIDTH = 1024;
+    private static final String[] WHITELISTED_IMAGE_FILE_TYPES = {
+            ImageFileTypeConstants.JPG
+    };
+
     @Autowired
-    private ObjectMapper objectMapper;
+    private IImageManagementService imageManagementService;
 
     @Inject
     private IArtistManagementService artistManagementService;
-
-    @Inject
-    private IArtistRepository artistRepository;
 
     @RequestMapping(method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> getArtists(
@@ -82,26 +83,25 @@ public class ArtistManagementController {
 
     @RequestMapping(value = "/image", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> uploadArtistImage (
-            @RequestPart("artist-slug") String artistSlug,
             @RequestPart("image") MultipartFile imageFile,
             @RequestHeader(value = "X-Request-ID", required = false) String xRequestId
     ) {
-        log.info("uploadArtistImage [{}] {}", xRequestId, artistSlug);
+        log.info("uploadArtistImage [{}] {}", imageFile.getOriginalFilename(), xRequestId);
 
-        Artist artist = artistManagementService.uploadArtistImage(artistSlug, imageFile);
+        Image image = imageManagementService.uploadImage(imageFile, MIN_IMAGE_HEIGHT, MIN_IMAGE_WIDTH, WHITELISTED_IMAGE_FILE_TYPES);
 
-        return new ResponseEntity<>(artist, HttpStatus.CREATED);
+        return new ResponseEntity<>(image, HttpStatus.CREATED);
     }
 
-    @RequestMapping(value = "/{slug}", method = RequestMethod.PATCH, produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<?> patchArtist(
+    @RequestMapping(value = "/{slug}", method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> updateArtist(
             @PathVariable("slug") String artistSlug,
-            @RequestBody List<JsonPatchOperation> patches,
+            @RequestBody Artist artistUpdates,
             @RequestHeader(value = "X-Request-ID", required = false) String xRequestId
     ) {
-        log.info("patchArtist [{}] {}", xRequestId, artistSlug);
+        log.info("updateArtist [{}] {}", xRequestId, artistSlug);
 
-        final Artist artist = artistManagementService.patchArtist(patches, artistSlug);
+        final Artist artist = artistManagementService.updateArtist(artistUpdates, artistSlug);
 
         return new ResponseEntity<>(artist, HttpStatus.OK);
     }

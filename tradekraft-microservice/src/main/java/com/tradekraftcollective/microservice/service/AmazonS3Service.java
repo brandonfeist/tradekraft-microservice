@@ -2,6 +2,8 @@ package com.tradekraftcollective.microservice.service;
 
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.*;
+import com.tradekraftcollective.microservice.exception.ErrorCode;
+import com.tradekraftcollective.microservice.exception.ServiceException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -38,18 +40,37 @@ public class AmazonS3Service {
     }
 
     private PutObjectResult upload(InputStream inputStream, String uploadKey) {
-        PutObjectRequest putObjectRequest = new PutObjectRequest(bucket, uploadKey, inputStream, new ObjectMetadata());
+        byte[] byteArray;
+        ByteArrayInputStream byteArrayInputStream;
+        ObjectMetadata objectMetadata = new ObjectMetadata();
+        try {
+            byteArray = IOUtils.toByteArray(inputStream);
+            objectMetadata.setContentLength(byteArray.length);
+
+            byteArrayInputStream = new ByteArrayInputStream(byteArray);
+        } catch (IOException e) {
+            log.error("IOException on file upload to AmazonS3 while trying to get content length", e);
+            throw new ServiceException(ErrorCode.IO_EXCEPTION, "in upload to AmazonS3 while trying to get content length");
+        }
+
+        PutObjectRequest putObjectRequest = new PutObjectRequest(bucket, uploadKey, byteArrayInputStream, objectMetadata);
 
         putObjectRequest.setCannedAcl(CannedAccessControlList.PublicRead);
 
         PutObjectResult putObjectResult = amazonS3Client.putObject(putObjectRequest);
 
-        IOUtils.closeQuietly(inputStream);
+        try {
+            inputStream.close();
+        } catch (IOException e) {
+            log.error("IOException on file upload to AmazonS3 while trying to close input stream", e);
+            throw new ServiceException(ErrorCode.IO_EXCEPTION, "in upload to AmazonS3 while trying to close input stream");
+        }
 
         return putObjectResult;
     }
 
     private PutObjectResult upload(File file, String uploadKey) {
+        log.info("TEST Uploading file {} with key {}", file.getName(), uploadKey);
         PutObjectRequest putObjectRequest = new PutObjectRequest(bucket, uploadKey, file);
 
         putObjectRequest.setCannedAcl(CannedAccessControlList.PublicRead);

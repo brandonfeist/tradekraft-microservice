@@ -1,23 +1,20 @@
 package com.tradekraftcollective.microservice.utilities;
 
+import com.github.slugify.Slugify;
 import com.tradekraftcollective.microservice.persistence.entity.Artist;
 import com.tradekraftcollective.microservice.persistence.entity.Release;
 import com.tradekraftcollective.microservice.persistence.entity.Song;
-import com.tradekraftcollective.microservice.persistence.entity.media.Audio;
 import com.tradekraftcollective.microservice.service.AmazonS3Service;
 import com.tradekraftcollective.microservice.strategies.MetaData;
 import com.tradekraftcollective.microservice.strategy.AudioFormat;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.inject.Inject;
 import java.io.*;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -31,90 +28,6 @@ public class AudioProcessingUtil {
 
     @Inject
     AmazonS3Service amazonS3Service;
-
-    public String processAudioAndUpload(List<AudioFormat> audioFormats, Release release, Song song, String uploadPath, MultipartFile audioFile) {
-        String originalFileName = audioFile.getOriginalFilename();
-        String fileNameNoExtension = FilenameUtils.getBaseName(originalFileName);
-
-        List<MetaData> metaDataList = retrieveMetaDataList(release, song);
-
-        try {
-            for(AudioFormat audioFormat : audioFormats) {
-                if(audioFormat.getFileName().equals("original")) {
-                    log.debug("Uploading original audio file [{}]", originalFileName);
-
-                    File tmpFile = convertAudio(song, fileNameNoExtension, audioFile, audioFormat, metaDataList);
-
-                    amazonS3Service.upload(tmpFile, uploadPath, tmpFile.getName());
-
-                    tmpFile.delete();
-                } else {
-                    log.debug("Uploading {} audio file [{}]", audioFormat.getFileName(), originalFileName);
-
-                    String updatedFileNameNoExtension = audioFormat.getFileName() + "_" + fileNameNoExtension;
-                    File tmpFile = convertAudio(song, updatedFileNameNoExtension, audioFile, audioFormat, metaDataList);
-
-                    amazonS3Service.upload(tmpFile, uploadPath, tmpFile.getName());
-
-                    tmpFile.delete();
-                }
-            }
-        } catch(IOException e) {
-            e.printStackTrace();
-        }
-
-        return fileNameNoExtension;
-    }
-
-    public <T extends Audio> HashMap<String, T> processAudioHashAndUpload(List<AudioFormat> audioFormats, Release release, Song song, String uploadPath, String AWSUrl, MultipartFile audioFile, Class<T> type) {
-        HashMap<String, T> returnMap = new HashMap<>();
-
-        String fileName = audioFile.getOriginalFilename();
-        String fileNameNoExtension = FilenameUtils.getBaseName(fileName);
-
-        List<MetaData> metaDataList = retrieveMetaDataList(release, song);
-
-        try {
-            for (AudioFormat audioFormat : audioFormats) {
-                if (audioFormat.getFileName().equals("original")) {
-                    log.debug("Uploading original audio file [{}]", fileName);
-
-                    File tmpFile = convertAudio(song, fileNameNoExtension, audioFile, audioFormat, metaDataList);
-
-                    tmpFile.createNewFile();
-
-                    amazonS3Service.upload(tmpFile, uploadPath, tmpFile.getName());
-
-                    T newSongFile = type.newInstance();
-                    newSongFile.setName(audioFile.getName());
-                    newSongFile.setLink(AWSUrl + fileName);
-
-                    returnMap.put(audioFile.getName(), newSongFile);
-
-                    tmpFile.delete();
-                } else {
-                    log.debug("Uploading {} audio file [{}]", audioFormat.getFileName(), fileName);
-
-                    String updatedFileNameNoExtension = audioFormat.getFileName() + "_" + fileNameNoExtension;
-                    File tmpFile = convertAudio(song, updatedFileNameNoExtension, audioFile, audioFormat, metaDataList);
-
-                    amazonS3Service.upload(tmpFile, uploadPath, tmpFile.getName());
-
-                    T newSongFile = type.newInstance();
-                    newSongFile.setName(audioFile.getName());
-                    newSongFile.setLink(AWSUrl + (audioFile.getName() + "_" + fileName ));
-
-                    returnMap.put(audioFile.getName(), newSongFile);
-
-                    tmpFile.delete();
-                }
-            }
-        } catch(IOException | IllegalAccessException | InstantiationException e) {
-            e.printStackTrace();
-        }
-
-        return returnMap;
-    }
 
     private File convertAudio(Song song, String fileName, MultipartFile inputAudioFile, AudioFormat audioFormat, List<MetaData> metaDataList) throws IOException {
         String duration;
@@ -152,7 +65,7 @@ public class AudioProcessingUtil {
                     duration = duration.substring(3, duration.length());
                 }
 
-                song.setDuration(duration);
+//                song.setDuration(duration);
             }
         }
 
@@ -214,5 +127,11 @@ public class AudioProcessingUtil {
         }
 
         return artistMetadataList.toArray(new String[artistMetadataList.size()]);
+    }
+
+    private String slugifyAudioName(String name) {
+        Slugify slug = new Slugify();
+
+        return slug.slugify(name);
     }
 }

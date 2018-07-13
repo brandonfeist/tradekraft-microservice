@@ -2,21 +2,19 @@ package com.tradekraftcollective.microservice.persistence.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.tradekraftcollective.microservice.persistence.entity.media.VideoFile;
+import com.tradekraftcollective.microservice.persistence.entity.media.VideoThumbnail;
 import com.tradekraftcollective.microservice.strategy.VideoFormat;
 import lombok.Data;
 import org.hibernate.validator.constraints.NotBlank;
 
 import javax.persistence.*;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 @Entity
 @Data
 @Table(name = "videos")
+@Cacheable(false)
 public class Video {
 
     public static final String VIDEO_UPLOAD_PATH = "uploads/video/";
@@ -26,8 +24,8 @@ public class Video {
     @JsonIgnore
     public List<VideoFormat> getVideoFormats() {
         List<VideoFormat> audioFormats = new ArrayList<>();
-//        audioFormats.add(new VideoFormat("mp4","libx264", "mp4", "mp4"));
-        audioFormats.add(new VideoFormat("webm","libvpx", "webm", "webm"));
+        audioFormats.add(new VideoFormat("mp4","libx264", "mp4", "mp4"));
+//        audioFormats.add(new VideoFormat("webm","libvpx", "webm", "webm"));
 
         return  audioFormats;
     }
@@ -41,11 +39,10 @@ public class Video {
     @Column(name = "name", nullable = false)
     private String name;
 
-    @Column(name = "video_file")
-    private String videoFile;
-
-    @Transient
-    private String videoThumbnail;
+    @OneToMany(mappedBy = "video", cascade = CascadeType.ALL)
+    @MapKey(name = "name")
+    @JsonIgnoreProperties("video")
+    private Map<String, VideoFile> videoFiles;
 
     @Column(name = "video_youtube_url")
     private String youtubeUrl;
@@ -61,6 +58,11 @@ public class Video {
     @JsonIgnoreProperties("videos")
     private Song song;
 
+    @OneToMany(mappedBy = "video", cascade = CascadeType.ALL)
+    @MapKey(name = "name")
+    @JsonIgnoreProperties("video")
+    private Map<String, VideoThumbnail> videoThumbnails;
+
     @Column(name = "slug", unique = true)
     private String slug;
 
@@ -70,39 +72,11 @@ public class Video {
     @Column(name = "updated_at", nullable = false)
     private Date updatedAt;
 
-    // Start and end time in milliseconds
-    @Transient
-    private Integer videoPreviewStartTime;
+    @JsonIgnore
+    public String getAWSKey() { return (VIDEO_UPLOAD_PATH + this.slug + "/"); }
 
-    @Transient
-    private Integer videoPreviewEndTime;
-
-    public ObjectNode getVideoFile() {
-        ObjectMapper objectMapper = new ObjectMapper();
-        ObjectNode objectNode = objectMapper.createObjectNode();
-
-        if(videoFile != null) {
-            for (VideoFormat videoFormat : getVideoFormats()) {
-                objectNode.put(videoFormat.getExtension(),
-                        (VIDEO_AWS_URL + slug + "/" + videoFormat.getFileName() + "_" + videoFile + "." + videoFormat.getExtension()));
-
-                if(isFeatured()) {
-                    objectNode.put(videoFormat.getExtension() + "_preview",
-                            (VIDEO_AWS_URL + slug + "/" + videoFormat.getFileName() + "_" + videoFile + "_preview." + videoFormat.getExtension()));
-                }
-            }
-        }
-
-        return objectNode;
-    }
-
-    public String getVideoThumbnail() {
-        if(videoFile != null) {
-            return (VIDEO_AWS_URL + slug + "/" + videoFile + ".jpg");
-        }
-
-        return null;
-    }
+    @JsonIgnore
+    public String getAWSUrl() { return (VIDEO_AWS_URL + this.slug + "/"); }
 
     @PrePersist
     protected void onCreate() {
@@ -122,16 +96,17 @@ public class Video {
             return false;
         }
         Video video = (Video) obj;
-        return id == video.id &&
+        return Objects.equals(id, video.id) &&
                 Objects.equals(name, video.name) &&
-                Objects.equals(videoFile, video.videoFile) &&
+                Objects.equals(externalUrl, video.externalUrl) &&
+                Objects.equals(videoFiles, video.videoFiles) &&
+                Objects.equals(videoThumbnails, video.videoThumbnails) &&
                 Objects.equals(featured, video.featured) &&
-                Objects.equals(song, video.song) &&
                 Objects.equals(slug, video.slug);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, name, videoFile, featured, song, slug);
+        return Objects.hash(id, name, externalUrl, videoFiles, videoThumbnails, featured, slug);
     }
 }

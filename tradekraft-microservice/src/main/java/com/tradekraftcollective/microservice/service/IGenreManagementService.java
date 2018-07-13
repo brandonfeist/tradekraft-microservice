@@ -16,7 +16,7 @@ public interface IGenreManagementService {
 
     Genre createGenre(Genre genre);
 
-    Genre patchGenre(final List<JsonPatchOperation> patchOperations, final Long genreId);
+    Genre updateGenre(final Genre genreUpdates, final Long genreId);
 
     void deleteGenre(Long genreId);
 }

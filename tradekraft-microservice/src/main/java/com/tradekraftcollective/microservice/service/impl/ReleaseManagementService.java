@@ -1,36 +1,25 @@
 package com.tradekraftcollective.microservice.service.impl;
 
-import com.amazonaws.services.s3.model.ObjectListing;
-import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.github.slugify.Slugify;
 import com.tradekraftcollective.microservice.exception.ErrorCode;
 import com.tradekraftcollective.microservice.exception.ServiceException;
-import com.tradekraftcollective.microservice.persistence.entity.Artist;
-import com.tradekraftcollective.microservice.persistence.entity.Genre;
 import com.tradekraftcollective.microservice.persistence.entity.Release;
 import com.tradekraftcollective.microservice.persistence.entity.Song;
-import com.tradekraftcollective.microservice.persistence.entity.media.ReleaseImage;
-import com.tradekraftcollective.microservice.repository.IArtistRepository;
-import com.tradekraftcollective.microservice.repository.IGenreRepository;
-import com.tradekraftcollective.microservice.repository.IReleaseImageRepository;
 import com.tradekraftcollective.microservice.repository.IReleaseRepository;
-import com.tradekraftcollective.microservice.service.AmazonS3Service;
 import com.tradekraftcollective.microservice.service.IReleaseManagementService;
 import com.tradekraftcollective.microservice.service.ISongManagementService;
 import com.tradekraftcollective.microservice.specification.ReleaseSpecification;
 import com.tradekraftcollective.microservice.specification.SearchCriteria;
-import com.tradekraftcollective.microservice.utilities.ImageProcessingUtil;
 import com.tradekraftcollective.microservice.validator.ReleaseValidator;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.*;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
 
 import javax.inject.Inject;
-import java.util.*;
+import java.util.List;
+import java.util.Optional;
 
 /**
  * Created by brandonfeist on 10/22/17.
@@ -39,31 +28,15 @@ import java.util.*;
 @Service
 public class ReleaseManagementService implements IReleaseManagementService {
     private static final String DESCENDING = "desc";
-    private static final String RELEASE_IMAGE_PATH = "uploads/release/image/";
 
     @Inject
     private IReleaseRepository releaseRepository;
-
-    @Autowired
-    private IGenreRepository genreRepository;
-
-    @Autowired
-    private IArtistRepository artistRepository;
-
-    @Autowired
-    private IReleaseImageRepository releaseImageRepository;
 
     @Inject
     private ISongManagementService songManagementService;
 
     @Inject
     private ReleaseValidator releaseValidator;
-
-    @Inject
-    ImageProcessingUtil imageProcessingUtil;
-
-    @Inject
-    AmazonS3Service amazonS3Service;
 
     @Override
     public Page<Release> getReleases(int page, int pageSize, String sortField, String sortOrder, String searchQuery, String genreQuery, String typeQuery) {
@@ -78,11 +51,15 @@ public class ReleaseManagementService implements IReleaseManagementService {
 
         Specification<Release> result = getReleaseSpecs(searchQuery, genreQuery, typeQuery);
 
+        Page<Release> releasePage;
+
         if(result != null) {
-            return releaseRepository.findAll(result, request);
+            releasePage = releaseRepository.findAll(result, request);
         }
 
-        return releaseRepository.findAll(request);
+        releasePage = releaseRepository.findAll(request);
+
+        return releasePage;
     }
 
     @Override
@@ -96,14 +73,15 @@ public class ReleaseManagementService implements IReleaseManagementService {
 
         Release release = releaseRepository.findBySlug(releaseSlug);
 
-        release.setSongs(songManagementService.songLinkAuthorization(release));
+        Optional.ofNullable(release)
+                .ifPresent(opRelease -> release.setSongs(songManagementService.songLinkAuthorization(release)));
 
         return release;
     }
 
     @Override
     public Release createRelease(Release release) {
-        log.info("Create release, name: {}, with {} songs", release.getName(), release.getSongs().size());
+        log.info("Create release, name: {}", release.getName());
 
         releaseValidator.validateRelease(release);
 
@@ -111,48 +89,33 @@ public class ReleaseManagementService implements IReleaseManagementService {
 
         Release returnRelease = releaseRepository.save(release);
 
-        log.info("***** SUCCESSFULLY CREATED RELEASE WITH SLUG = {} AND NUMBER OF SONG = {} *****", returnRelease.getSlug(), returnRelease.getSongs().size());
+        log.info("***** SUCCESSFULLY CREATED RELEASE WITH SLUG = {} *****", returnRelease.getSlug());
 
         return returnRelease;
     }
 
     @Override
-    public Release uploadReleaseImage(String releaseSlug, MultipartFile imageFile) {
-        log.info("Uploading image for release slug [{}]", releaseSlug);
+    public Release updateRelease(final Release releaseUpdates, final String releaseSlug) {
 
-        releaseValidator.validateReleaseImage(imageFile);
-
-        Release returnRelease = releaseRepository.findBySlug(releaseSlug);
-
-        deleteAllReleaseImages(returnRelease);
-
-        HashMap<String, ReleaseImage> imageHash = imageProcessingUtil.processImageHashAndUpload(returnRelease.getImageSizes(),
-                returnRelease.getAWSKey(), returnRelease.getAWSUrl(),
-                imageFile, 1.0, ReleaseImage.class);
-
-        saveImagesToRepo(imageHash, returnRelease);
-
-        returnRelease.setImages(imageHash);
-
-        returnRelease = releaseRepository.save(returnRelease);
-
-        log.info("***** SUCCESSFULLY UPLOADED IMAGE FOR RELEASE = {} *****", returnRelease.getSlug());
-
-        return returnRelease;
-    }
-
-    private void saveImagesToRepo(HashMap<String, ReleaseImage> map, Release release) {
-        Iterator it = map.entrySet().iterator();
-        while (it.hasNext()) {
-            Map.Entry pair = (Map.Entry)it.next();
-
-            ReleaseImage image = (ReleaseImage) pair.getValue();
-            image.setRelease(release);
-
-            releaseImageRepository.save((ReleaseImage) pair.getValue());
-
-            it.remove();
+        Release release = releaseRepository.findBySlug(releaseSlug);
+        if(release == null) {
+            log.error("Release with slug [{}] does not exist", releaseSlug);
+            throw new ServiceException(ErrorCode.INVALID_RELEASE_SLUG, "Release with slug [" + releaseSlug + "] does not exist");
         }
+
+        if(!releaseUpdates.getName().equals(release.getName())) {
+            release.setSlug(createReleaseSlug(releaseUpdates.getName()));
+        }
+
+        release = releaseUpdates(release, releaseUpdates);
+
+        releaseValidator.validateRelease(release);
+
+        releaseRepository.save(release);
+
+        log.info("***** SUCCESSFULLY UPDATED RELEASE WITH SLUG = {} *****", release.getSlug());
+
+        return release;
     }
 
     @Override
@@ -166,8 +129,6 @@ public class ReleaseManagementService implements IReleaseManagementService {
             throw new ServiceException(ErrorCode.INVALID_RELEASE_SLUG, "Release with slug [" + releaseSlug + "] does not exist");
         }
 
-        deleteAllReleaseImages(release);
-
         for(Song song : release.getSongs()) {
             songManagementService.deleteSong(song);
         }
@@ -177,12 +138,36 @@ public class ReleaseManagementService implements IReleaseManagementService {
         log.info("***** SUCCESSFULLY DELETED RELEASE WITH SLUG = {} *****", releaseSlug);
     }
 
+    private Release releaseUpdates(Release originalRelease, final Release releaseUpdates) {
+        originalRelease.setName(releaseUpdates.getName());
+        originalRelease.setImage(releaseUpdates.getImage());
+        originalRelease.setDescription(releaseUpdates.getDescription());
+        originalRelease.setReleaseType(releaseUpdates.getReleaseType());
+        originalRelease.setReleaseDate(releaseUpdates.getReleaseDate());
+        originalRelease.setSoundcloud(releaseUpdates.getSoundcloud());
+        originalRelease.setSpotify(releaseUpdates.getSpotify());
+        originalRelease.setItunes(releaseUpdates.getItunes());
+        originalRelease.setAppleMusic(releaseUpdates.getAppleMusic());
+        originalRelease.setGooglePlay(releaseUpdates.getGooglePlay());
+        originalRelease.setAmazon(releaseUpdates.getAmazon());
+        originalRelease.setFreeRelease(releaseUpdates.isFreeRelease());
+
+        return originalRelease;
+    }
+
     private String createReleaseSlug(String releaseName) {
         Slugify slug = new Slugify();
         String result = slug.slugify(releaseName);
 
-        int duplicateSlugs = releaseRepository.findBySlugStartingWith(result).size();
-        return duplicateSlugs > 0 ? result.concat("-" + (duplicateSlugs + 1)) : result;
+        List<Release> duplicateReleases = releaseRepository.findBySlugStartingWith(result);
+
+        for(Release release : duplicateReleases) {
+            if(release.getSlug().equals(result)) {
+                return result.concat("-" + (duplicateReleases.size() + 1));
+            }
+        }
+
+        return result;
     }
 
     private Specification<Release> getReleaseSpecs(String searchQuery, String genreQuery, String typeQuery) {
@@ -220,20 +205,5 @@ public class ReleaseManagementService implements IReleaseManagementService {
         }
 
         return result;
-    }
-
-    private void deleteAllReleaseImages(Release release) {
-        Map<String, ReleaseImage> releaseImages = release.getImages();
-
-        ObjectListing directoryImages = amazonS3Service.getDirectoryContent(release.getAWSKey(), null);
-        for (S3ObjectSummary summary: directoryImages.getObjectSummaries()) {
-            if(amazonS3Service.doesObjectExist(summary.getKey())) {
-                amazonS3Service.delete(summary.getKey());
-            }
-        }
-
-        for (Map.Entry<String, ReleaseImage> entry : releaseImages.entrySet()) {
-            releaseImageRepository.delete(entry.getValue());
-        }
     }
 }

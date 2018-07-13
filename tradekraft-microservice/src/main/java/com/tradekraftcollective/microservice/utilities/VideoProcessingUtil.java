@@ -2,6 +2,8 @@ package com.tradekraftcollective.microservice.utilities;
 
 import com.github.slugify.Slugify;
 import com.tradekraftcollective.microservice.persistence.entity.Video;
+import com.tradekraftcollective.microservice.persistence.entity.media.VideoFile;
+import com.tradekraftcollective.microservice.persistence.entity.media.VideoThumbnail;
 import com.tradekraftcollective.microservice.service.AmazonS3Service;
 import com.tradekraftcollective.microservice.strategy.VideoFormat;
 import lombok.extern.slf4j.Slf4j;
@@ -15,9 +17,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.*;
+import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -36,47 +39,67 @@ public class VideoProcessingUtil {
     @Autowired
     AmazonS3Service amazonS3Service;
 
-    public String processVideoAndUpload(List<VideoFormat> videoFormats, Video video, String uploadPath, MultipartFile videoFile) {
+    public HashMap<String, VideoFile> processVideoHashAndUpload(
+            List<VideoFormat> videoFormats, String uploadPath, String AWSUrl, MultipartFile videoFile,
+            double videoQuality, Video video, int previewStartTime, int previewEndTime
+    ) {
+        HashMap<String, VideoFile> returnMap = new HashMap<>();
+
         Slugify slug = new Slugify();
 
         String originalFileName = videoFile.getOriginalFilename();
+
         String fileNameNoExtension = slug.slugify(FilenameUtils.getBaseName(originalFileName));
 
-        for(VideoFormat videoFormat : videoFormats) {
-            log.debug("Uploading video file [{}]", originalFileName);
+        try {
+            for (VideoFormat videoFormat : videoFormats) {
+                log.debug("Uploading video file [{}], [{}]", originalFileName, videoFormat.getFileName());
 
-            String updatedFileNameNoExtension = videoFormat.getFileName() + "_" + fileNameNoExtension;
-            File tmpFile = convertVideo(video, updatedFileNameNoExtension, videoFile, videoFormat);
+                String updatedFileNameNoExtension = videoFormat.getFileName() + "_" + fileNameNoExtension;
+                File tmpFile = convertVideo(updatedFileNameNoExtension, videoFile, videoFormat);
 
-            amazonS3Service.upload(tmpFile, uploadPath, tmpFile.getName());
-
-            tmpFile.delete();
-
-            if(video.isFeatured() && video.getVideoPreviewStartTime() != null && video.getVideoPreviewEndTime() != null) {
-                log.debug("Creating video preview file from [{}] to [{}]", video.getVideoPreviewStartTime(), video.getVideoPreviewStartTime());
-
-                String updatedPreviewFileNameNoExtension = videoFormat.getFileName() + "_" + fileNameNoExtension + "_preview";
-                tmpFile = createVideoPreview(video, updatedPreviewFileNameNoExtension, videoFile, videoFormat, video.getVideoPreviewStartTime(), video.getVideoPreviewEndTime());
+                tmpFile.createNewFile();
 
                 amazonS3Service.upload(tmpFile, uploadPath, tmpFile.getName());
 
+                VideoFile newVideoFile = new VideoFile(videoFormat.getFileName(), AWSUrl + tmpFile.getName());
+
+                returnMap.put(videoFormat.getFileName(), newVideoFile);
+
                 tmpFile.delete();
+
+                if(video.isFeatured() || true) {
+                    log.debug("Creating video preview file from [{}] to [{}]", previewStartTime, previewEndTime);
+
+                    String updatedPreviewFileNameNoExtension = videoFormat.getFileName() + "_" + fileNameNoExtension + "_preview";
+                    tmpFile = createVideoPreview(video, updatedPreviewFileNameNoExtension, videoFile, videoFormat, previewStartTime, previewEndTime);
+
+                    amazonS3Service.upload(tmpFile, uploadPath, tmpFile.getName());
+
+                    VideoFile newVideoPreviewFile = new VideoFile((videoFormat.getFileName() + "_preview"), AWSUrl + tmpFile.getName());
+
+                    returnMap.put((videoFormat.getFileName() + "_preview"), newVideoPreviewFile);
+
+                    tmpFile.delete();
+                }
+
             }
+        } catch(IOException e) {
+            log.error(e.toString());
         }
 
-        // Get video thumbnail..
-        log.debug("Uploading video thumbnail");
-
-        File tmpFile = getVideoThumbnail(video, fileNameNoExtension, videoFile);
-
-        amazonS3Service.upload(tmpFile, uploadPath, tmpFile.getName());
-
-        return fileNameNoExtension;
+        return returnMap;
     }
 
-    private File getVideoThumbnail(Video video, String fileNameNoExtension, MultipartFile videoFile) {
+    public HashMap<String, VideoThumbnail> getVideoThumbnailHash(String uploadPath, String AWSUrl, MultipartFile videoFile) {
+        HashMap<String, VideoThumbnail> returnMap = new HashMap<>();
+
         try {
+            Slugify slug = new Slugify();
+
             String originalFileName = videoFile.getOriginalFilename();
+
+            String fileNameNoExtension = slug.slugify(FilenameUtils.getBaseName(originalFileName));
 
             File tmpVideoFile = createTempVideoFile(originalFileName, videoFile);
 
@@ -104,15 +127,28 @@ public class VideoProcessingUtil {
 
             tmpVideoFile.delete();
 
-            return outputFile;
-        } catch(IOException e) {
+            log.debug("Uploading video thumbnail");
 
+            amazonS3Service.upload(outputFile, uploadPath, outputFile.getName());
+
+            BufferedImage bufferedImage = ImageIO.read(outputFile);
+
+            VideoThumbnail videoThumbnail = new VideoThumbnail("jpg", AWSUrl + outputFile.getName(),
+                    bufferedImage.getWidth(), bufferedImage.getHeight());
+
+            returnMap.put("original", videoThumbnail);
+
+            outputFile.delete();
+
+            return returnMap;
+        } catch(IOException e) {
+            log.error(e.toString());
         }
 
-        return null;
+        return returnMap;
     }
 
-    private File convertVideo(Video video, String fileNameNoExtension, MultipartFile videoFile, VideoFormat videoFormat) {
+    private File convertVideo(String fileNameNoExtension, MultipartFile videoFile, VideoFormat videoFormat) {
         try {
             String originalFileName = videoFile.getOriginalFilename();
 
@@ -127,15 +163,16 @@ public class VideoProcessingUtil {
                     .setInput(tmpVideoFile.getName())
                     .overrideOutputFiles(true)
                     .addOutput(outputFile.getName())
-                    .setFormat(videoFormat.getFormat())        // Format is inferred from filename, or can be set
+                    .setFormat(videoFormat.getFormat())
 //                    .setTargetSize(250_000)  // Aim for a 250KB file
                     .setVideoQuality(1.0)
+                    .setConstantRateFactor(12)
 
-                    .disableSubtitle()       // No subtiles
+                    .disableSubtitle()
 
-                    .setVideoCodec(videoFormat.getCodec())     // Video using x264
+                    .setVideoCodec(videoFormat.getCodec())
 
-                    .setStrict(FFmpegBuilder.Strict.EXPERIMENTAL) // Allow FFmpeg to use experimental specs
+                    .setStrict(FFmpegBuilder.Strict.EXPERIMENTAL)
                     .done();
 
             FFmpegExecutor executor = new FFmpegExecutor(ffmpeg, ffprobe);
@@ -204,11 +241,19 @@ public class VideoProcessingUtil {
 
         tmpAudioFile.createNewFile();
 
-        FileOutputStream fos = new FileOutputStream(tmpAudioFile);
+        InputStream in = videoFile.getInputStream();
 
-        fos.write(videoFile.getBytes());
+        FileOutputStream out = new FileOutputStream(tmpAudioFile);
 
-        fos.close();
+        byte[] buffer = new byte[4096];
+        int len;
+        while ((len = in.read(buffer, 0, buffer.length)) > 0) {
+            out.write(buffer, 0, len);
+        }
+
+        in.close();
+
+        out.close();
 
         return tmpAudioFile;
     }

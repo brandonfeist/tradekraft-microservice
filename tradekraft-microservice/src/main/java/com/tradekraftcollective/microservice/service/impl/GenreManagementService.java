@@ -1,12 +1,10 @@
 package com.tradekraftcollective.microservice.service.impl;
 
-import com.github.fge.jsonpatch.JsonPatchOperation;
 import com.tradekraftcollective.microservice.exception.ErrorCode;
 import com.tradekraftcollective.microservice.exception.ServiceException;
 import com.tradekraftcollective.microservice.persistence.entity.Genre;
 import com.tradekraftcollective.microservice.repository.IGenreRepository;
 import com.tradekraftcollective.microservice.service.IGenreManagementService;
-import com.tradekraftcollective.microservice.service.IGenrePatchService;
 import com.tradekraftcollective.microservice.utilities.ColorUtility;
 import com.tradekraftcollective.microservice.validator.GenreValidator;
 import lombok.extern.slf4j.Slf4j;
@@ -14,10 +12,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import javax.inject.Inject;
-import java.util.List;
 
 /**
  * Created by brandonfeist on 9/26/17.
@@ -29,9 +25,6 @@ public class GenreManagementService implements IGenreManagementService {
 
     @Inject
     IGenreRepository genreRepository;
-
-    @Inject
-    IGenrePatchService genrePatchService;
 
     @Inject
     GenreValidator genreValidator;
@@ -80,23 +73,22 @@ public class GenreManagementService implements IGenreManagementService {
     }
 
     @Override
-    @Transactional(rollbackFor = {RuntimeException.class, ServiceException.class})
-    public Genre patchGenre(List<JsonPatchOperation> patchOperations, Long genreId) {
-        Genre oldGenre = genreRepository.findOne(genreId);
-        if(oldGenre == null) {
+    public Genre updateGenre(final Genre genreUpdates, final Long genreId) {
+        Genre genre = genreRepository.findOne(genreId);
+        if(genre == null) {
             log.error("Genre with id [{}] does not exist", genreId);
             throw new ServiceException(ErrorCode.INVALID_GENRE_ID, "Genre with id [" + genreId + "] does not exist");
         }
 
-        Genre patchedGenre = genrePatchService.patchGenre(patchOperations, oldGenre);
+        genre = genreUpdates(genre, genreUpdates);
 
-        genreValidator.validateGenre(patchedGenre);
+        genreValidator.validateGenre(genre);
 
-        genreRepository.save(patchedGenre);
+        genreRepository.save(genre);
 
-        log.info("***** SUCCESSFULLY PATCHED GENRE WITH ID = {} *****", patchedGenre.getId());
+        log.info("***** SUCCESSFULLY UPDATED GENRE WITH ID = {} *****", genre.getId());
 
-        return patchedGenre;
+        return genre;
     }
 
     @Override
@@ -106,5 +98,13 @@ public class GenreManagementService implements IGenreManagementService {
         genreRepository.delete(genreId);
 
         log.info("***** SUCCESSFULLY DELETED GENRE WITH ID = {} *****", genreId);
+    }
+
+    private Genre genreUpdates(Genre originalGenre, final Genre genreUpdates) {
+        originalGenre.setName(genreUpdates.getName());
+        originalGenre.setColor(genreUpdates.getColor());
+        originalGenre.setHue(colorUtility.rgbToHue(colorUtility.hexToRgb(genreUpdates.getColor())));
+
+        return originalGenre;
     }
 }

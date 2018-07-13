@@ -1,0 +1,23 @@
+{
+  "name": "Test Song",
+  "songFile": {
+    "uuid": "efe9449e-6f7c-43ca-92aa-1901293fac93",
+    "duration": 100000,
+    "link": "https://www.testsonglink.com"
+  },
+  "trackNumber": 1,
+  "bpm": 140,
+  "release": {
+    "name": "Test Release",
+    "slug": "test-release"
+  },
+  "artists": [
+    {
+      "name": "Test Artist",
+      "slug": "test-artist"
+    }
+  ],
+  "genre": {
+    "name": "Test Genre"
+  }
+}

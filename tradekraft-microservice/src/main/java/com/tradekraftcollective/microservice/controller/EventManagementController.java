@@ -1,15 +1,17 @@
 package com.tradekraftcollective.microservice.controller;
 
 import com.github.fge.jsonpatch.JsonPatchOperation;
-import com.tradekraftcollective.microservice.persistence.entity.Artist;
+import com.tradekraftcollective.microservice.constants.ImageFileTypeConstants;
 import com.tradekraftcollective.microservice.persistence.entity.Event;
+import com.tradekraftcollective.microservice.persistence.entity.media.Image;
 import com.tradekraftcollective.microservice.service.IEventManagementService;
+import com.tradekraftcollective.microservice.service.IImageManagementService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.util.StopWatch;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -24,9 +26,18 @@ import java.util.List;
 @RequestMapping("/v1/events")
 public class EventManagementController {
     private static final String DEFAULT_PAGE_NUM = "0";
-    private static final String DEFAULT_PAGE_SIZE = "100";
+    private static final String DEFAULT_PAGE_SIZE = "4";
     private static final String SORT_ORDER_DESC = "asc";
     private static final String SORT_FIELD_NAME = "startDateTime";
+
+    private static final int MIN_IMAGE_HEIGHT = -1;
+    private static final int MIN_IMAGE_WIDTH = 1024;
+    private static final String[] WHITELISTED_IMAGE_FILE_TYPES = {
+            ImageFileTypeConstants.JPG
+    };
+
+    @Autowired
+    private IImageManagementService imageManagementService;
 
     @Inject
     IEventManagementService eventManagementService;
@@ -75,26 +86,25 @@ public class EventManagementController {
 
     @RequestMapping(value = "/image", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> uploadEventImage (
-            @RequestPart("event-slug") String eventSlug,
             @RequestPart("image") MultipartFile imageFile,
             @RequestHeader(value = "X-Request-ID", required = false) String xRequestId
     ) {
-        log.info("uploadEventImage [{}] {}", xRequestId, eventSlug);
+        log.info("uploadEventImage [{}] {}", imageFile.getOriginalFilename(), xRequestId);
 
-        Event event = eventManagementService.uploadEventImage(eventSlug, imageFile);
+        Image image = imageManagementService.uploadImage(imageFile, MIN_IMAGE_HEIGHT, MIN_IMAGE_WIDTH, WHITELISTED_IMAGE_FILE_TYPES);
 
-        return new ResponseEntity<>(event, HttpStatus.CREATED);
+        return new ResponseEntity<>(image, HttpStatus.CREATED);
     }
 
-    @RequestMapping(value = "/{slug}", method = RequestMethod.PATCH, produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<?> patchEvent(
+    @RequestMapping(value = "/{slug}", method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> updateEvent(
             @PathVariable("slug") String eventSlug,
-            @RequestBody List<JsonPatchOperation> patches,
+            @RequestBody final Event eventUpdates,
             @RequestHeader(value = "X-Request-ID", required = false) String xRequestId
     ) {
-        log.info("patchArtist [{}] {}", xRequestId, eventSlug);
+        log.info("updateEvent [{}] {}", xRequestId, eventSlug);
 
-        final Event event = eventManagementService.patchEvent(patches, eventSlug);
+        final Event event = eventManagementService.updateEvent(eventUpdates, eventSlug);
 
         return new ResponseEntity<>(event, HttpStatus.OK);
     }
@@ -104,7 +114,7 @@ public class EventManagementController {
             @PathVariable("slug") String eventSlug,
             @RequestHeader(value = "X-Request-ID", required = false) String xRequestId
     ) {
-        log.info("deleteArtist [{}] {}", xRequestId, eventSlug);
+        log.info("deleteEvent [{}] {}", xRequestId, eventSlug);
 
         eventManagementService.deleteEvent(eventSlug);
 

@@ -2,11 +2,7 @@ package com.tradekraftcollective.microservice.persistence.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.tradekraftcollective.microservice.persistence.entity.media.EventImage;
-import com.tradekraftcollective.microservice.persistence.entity.media.ReleaseImage;
-import com.tradekraftcollective.microservice.strategy.ImageSize;
+import com.tradekraftcollective.microservice.persistence.entity.media.Image;
 import lombok.Data;
 import org.hibernate.validator.constraints.NotBlank;
 
@@ -19,21 +15,12 @@ import java.util.*;
 @Entity
 @Data
 @Table(name = "releases")
+@Cacheable(false)
 public class Release {
 
     public static final String RELEASE_IMAGE_UPLOAD_PATH = "uploads/release/image/";
 
     public static final String RELEASE_AWS_URL = "https://s3.amazonaws.com/tradekraft-assets/uploads/release/image/";
-
-    @JsonIgnore
-    public List<ImageSize> getImageSizes() {
-        List<ImageSize> imageSizes = new ArrayList<>();
-        imageSizes.add(new ImageSize("original", 1024, 1024));
-        imageSizes.add(new ImageSize("medium", 512, 512));
-        imageSizes.add(new ImageSize("thumb", 350, 350));
-
-        return imageSizes;
-    }
 
     @Id
     @Column(name = "id", nullable = false)
@@ -44,10 +31,10 @@ public class Release {
     @Column(name = "name", nullable = false)
     private String name;
 
-    @OneToMany(mappedBy = "release")
-    @MapKey(name = "name")
-    @JsonIgnoreProperties("release")
-    private Map<String, ReleaseImage> images;
+    @NotBlank
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "image_uuid")
+    private Image image;
 
     @Column(name = "description")
     private String description;
@@ -117,10 +104,10 @@ public class Release {
             return false;
         }
         Release release = (Release) obj;
-        return id == release.id &&
+        return Objects.equals(id, release.id) &&
                 Objects.equals(name, release.name) &&
                 Objects.equals(description, release.description) &&
-                Objects.equals(images, release.images) &&
+                Objects.equals(image, release.image) &&
                 Objects.equals(releaseType, release.releaseType) &&
                 Objects.equals(releaseDate, release.releaseDate) &&
                 Objects.equals(soundcloud, release.soundcloud) &&
@@ -134,7 +121,7 @@ public class Release {
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, name, description, images, releaseType, releaseDate,
+        return Objects.hash(id, name, description, image, releaseType, releaseDate,
                 soundcloud, spotify, itunes, appleMusic, googlePlay, appleMusic,
                 slug);
     }

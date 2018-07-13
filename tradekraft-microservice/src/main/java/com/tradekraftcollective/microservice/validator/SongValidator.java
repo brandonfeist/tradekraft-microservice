@@ -4,7 +4,9 @@ import com.tradekraftcollective.microservice.exception.ErrorCode;
 import com.tradekraftcollective.microservice.exception.ServiceException;
 import com.tradekraftcollective.microservice.persistence.entity.Song;
 import com.tradekraftcollective.microservice.repository.IGenreRepository;
+import com.tradekraftcollective.microservice.repository.ISongRepository;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -18,6 +20,9 @@ import java.util.List;
 @Slf4j
 @Component
 public class SongValidator {
+
+    @Autowired
+    private ISongRepository songRepository;
 
     @Inject
     private IGenreRepository genreRepository;
@@ -51,6 +56,17 @@ public class SongValidator {
 //        validateIfArtistExists(song);
 //        validateSongFile(songFile);
 //    }
+
+    public Song validateSongSlug(String songSlug) {
+        Song song = songRepository.findBySlug(songSlug);
+
+        if(song == null) {
+            log.error("Song with slug {} does not exist.", songSlug);
+            throw new ServiceException(ErrorCode.INVALID_SONG_SLUG, "Song with slug " + songSlug + " does not exist.");
+        }
+
+        return song;
+    }
 
     public void validateSong(Song song) {
         validateIfGenreExists(song);

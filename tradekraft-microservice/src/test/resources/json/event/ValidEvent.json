@@ -1,0 +1,20 @@
+{
+  "name": "Test Event",
+  "image": {
+    "id": 3,
+    "uuid": "efe9449e-6f7c-43ca-92aa-1901293fac93",
+    "link": "https://s3.amazonaws.com/tradekraft-assets/uploads/image/efe9449e-6f7c-43ca-92aa-1901293fac93/2a86964746406356388229ceb1804402f2983c8f.jpg"
+  },
+  "description": "<p>Test description.</p>",
+  "ticketLink": "https://www.testlink.com",
+  "entryAge": "18+",
+  "venueName": "Test Venue",
+  "address": "2110 Mangin Way",
+  "city": "San Jose",
+  "state": "CA",
+  "zip": "95148",
+  "country": "United States",
+  "startDateTime": "2018-05-21T19:15:53.183",
+  "endDateTime": "2018-05-22T19:15:53.183",
+  "officialEvent": true
+}

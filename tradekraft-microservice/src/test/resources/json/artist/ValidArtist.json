@@ -1,0 +1,21 @@
+{
+  "name": "Test Artist",
+  "description": "Test Description...",
+  "image": {
+    "id": 3,
+    "uuid": "efe9449e-6f7c-43ca-92aa-1901293fac93",
+    "link": "https://s3.amazonaws.com/tradekraft-assets/uploads/image/efe9449e-6f7c-43ca-92aa-1901293fac93/2a86964746406356388229ceb1804402f2983c8f.jpg"
+  },
+  "soundcloud": "https://www.soundcloud.com/skylark",
+  "facebook": "https://www.facebook.com/skylark",
+  "twitter": "https://www.twitter.com/skylark",
+  "instagram": "https://www.instagram.com/skylark",
+  "spotify": "https://open.spotify.com/artist/5vDfjAfR2hfFJkOCSl9R74?si=vaJLWSbXSd6i0zR-f1weWw",
+  "yearsActive": [
+    {
+      "year": 2018,
+      "createdAt": "2018-05-21T19:15:53.183",
+      "updatedAt": "2018-05-21T19:15:53.183"
+    }
+  ]
+}

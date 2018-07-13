@@ -2,8 +2,7 @@ package com.tradekraftcollective.microservice.persistence.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.tradekraftcollective.microservice.persistence.entity.media.EventImage;
-import com.tradekraftcollective.microservice.strategy.ImageSize;
+import com.tradekraftcollective.microservice.persistence.entity.media.Image;
 import lombok.AccessLevel;
 import lombok.Data;
 import lombok.Getter;
@@ -24,14 +23,6 @@ public class Event {
 
     public static final String EVENT_IMAGE_UPLOAD_PATH = "uploads/event/image/";
 
-    @JsonIgnore
-    public List<ImageSize> getImageSizes() {
-        List<ImageSize> imageSizes = new ArrayList<>();
-        imageSizes.add(new ImageSize("original", 500, null));
-
-        return imageSizes;
-    }
-
     @Transient
     @JsonIgnore
     @Getter(AccessLevel.NONE)
@@ -47,10 +38,10 @@ public class Event {
     @Column(name = "name", nullable = false)
     private String name;
 
-    @OneToMany(mappedBy = "event")
-    @MapKey(name = "name")
-    @JsonIgnoreProperties("event")
-    private Map<String, EventImage> images;
+    @NotBlank
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "image_uuid")
+    private Image image;
 
     @Column(name = "description")
     private String description;
@@ -134,13 +125,13 @@ public class Event {
             return false;
         }
         Event event = (Event) obj;
-        return id == event.id &&
+        return Objects.equals(id, event.id) &&
                 officialEvent == officialEvent &&
                 Double.doubleToLongBits(latitude) == Double.doubleToLongBits(event.latitude) &&
                 Double.doubleToLongBits(longitude) == Double.doubleToLongBits(event.longitude) &&
                 Objects.equals(name, event.name) &&
                 Objects.equals(description, event.description) &&
-                Objects.equals(images, event.images) &&
+                Objects.equals(image, event.image) &&
                 Objects.equals(ticketLink, event.ticketLink) &&
                 Objects.equals(entryAge, event.entryAge) &&
                 Objects.equals(venueName, event.venueName) &&
@@ -156,7 +147,7 @@ public class Event {
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, officialEvent, latitude, longitude, name, description, images,
+        return Objects.hash(id, officialEvent, latitude, longitude, name, description, image,
                 ticketLink, entryAge, venueName, address, city, state, zip, country, startDateTime, endDateTime,
                 slug);
     }

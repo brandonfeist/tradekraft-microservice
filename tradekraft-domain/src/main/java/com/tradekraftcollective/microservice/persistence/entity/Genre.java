@@ -51,8 +51,8 @@ public class Genre {
             return false;
         }
         Genre genre = (Genre) obj;
-        return id == genre.id &&
-                hue == genre.hue &&
+        return Objects.equals(id, genre.id) &&
+                Objects.equals(hue, genre.hue) &&
                 Objects.equals(name, genre.name) &&
                 Objects.equals(color, genre.color);
     }
